@@ -32,51 +32,51 @@ export default function UserHomePage() {
   };
 
   return (
-    <div className="flex flex-col p-4 gap-2.5">
-      {/* หัวเรื่องต้อนรับ */}
-      <div className='flex flex-row'>
-        <h1 className="text-2xl font-serif">
-          Hello <span className='underline decoration-sky-500'>{currentUser.name} </span>
-          <Badge variant="destructive">{currentUser.role}</Badge>
-        </h1>
+ <div className="container mx-auto p-6 space-y-6">
+      {/* ส่วนหัวหน้าเว็บ */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Home</h1>
+          <p className="text-muted-foreground text-sm">Welcome back, {currentUser.name}</p>
+        </div>
+        <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
+          {currentUser.role}
+        </Badge>
       </div>
-      <hr />
-      {/* เนื้อหาหลักของหน้า */}
-      <div className='grid sm:grid-cols-1 xl:grid-cols-4 xl:grid-rows-1 sm:grid-rows-1 gap-4'>
-        {/* รูปภาพสินค้า */}
-        <Card>
-          <Image
-            src={items.img}
-            alt={items.name}
-            width={1920}
-            height={1080}
-            className="rounded-md p-2.5"
-          />
-          {/* เนื้อหารายการสินค้า */}
-          <CardHeader>
-            {/* ชื่อสินค้า */}
-            <CardTitle>{items.name}</CardTitle>
-            {/* คำอธิบายสินค้า */}
-            <CardDescription className='truncate'>{items.description}</CardDescription>
-            {/* จำนวนสินค้าในสต็อก */}
-            <CardAction>
-              <Badge>
-                {items.stock} in Stock
-              </Badge>
-            </CardAction>
+
+      <hr className="border-border" />
+
+      {/* Grid ของรายการสินค้า */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <Card className="overflow-hidden flex flex-col hover:shadow-lg transition-shadow">
+          {/* รูปภาพสินค้าพร้อมควบคุมสัดส่วน */}
+          <div className="relative aspect-video w-full overflow-hidden">
+            <Image
+              src={items.img}
+              alt={items.name}
+              fill // ใช้ fill เพื่อให้รูปขยายเต็ม div พ่อ
+              className="object-cover hover:scale-105 transition-transform duration-300 p-2.5"
+            />
+          </div>
+
+          <CardHeader className="space-y-1">
+            <div className="flex justify-between items-start">
+              <CardTitle className="text-xl line-clamp-1">{items.name}</CardTitle>
+              <Badge variant="outline">{items.stock} Left</Badge>
+            </div>
+            {/* ปรับให้ truncate ทำงานได้ดีขึ้นด้วย line-clamp-2 */}
+            <CardDescription className="line-clamp-2 min-h-[40px]">
+              {items.description}
+            </CardDescription>
           </CardHeader>
-          {/* หมวดหมู่สินค้า */}
-          <CardContent className='flex flex-row justify-start items-start gap-4'>
-            <Badge variant="outline">
-              {items.category}
-            </Badge>
+
+          <CardContent className="flex-grow">
+            <Badge variant="secondary">{items.category}</Badge>
           </CardContent>
-          {/* ปุ่มจองอุปกรรณ์ */}
-          <CardFooter>
-            <Button className='w-full'>
-              <Link href="/user/booking">
-                Book Now
-              </Link>
+
+          <CardFooter className="pt-0">
+            <Button asChild className="w-full">
+              <Link href="/user/booking">Book Now</Link>
             </Button>
           </CardFooter>
         </Card>
