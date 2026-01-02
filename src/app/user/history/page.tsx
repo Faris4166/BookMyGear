@@ -91,7 +91,7 @@ export default function HistoryUser() {
                     </div>
                     <div className="p-3 bg-muted/50 rounded-lg">
                       <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Internal Note</p>
-                      <p className="italic text-sm">"{item.role}"</p>
+                      <p className="italic text-sm">{item.role}</p>
                     </div>
                   </div>
 
