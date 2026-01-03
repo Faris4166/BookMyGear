@@ -23,11 +23,10 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
 
   useEffect(() => {
     const loadData = async () => {
-      const resolvedParams = await params
+      const { id } = await params
       const response = await fetch('/api/items')
       const items = await response.json()
-      const found = items.find((i: any) => i.id === resolvedParams.id)
-      setProduct(found)
+      setProduct(items.find((i: any) => i.id === id))
       setIsLoading(false)
     }
     loadData()
@@ -35,30 +34,28 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
 
   const handleBooking = async () => {
     if (!date?.from || !date?.to) return alert("กรุณาเลือกวันที่")
+    if (product.stock <= 0) return alert("สินค้าหมดสต็อก")
+
     setIsBooking(true)
     try {
       const response = await fetch('/api/booking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          itemId: product.id,
           name: product.name,
           img: product.img,
           description: product.description,
           category: product.category,
           datastart: format(date.from, 'yyyy-MM-dd'),
           dataend: format(date.to, 'yyyy-MM-dd'),
-          role: "รอเจ้าหน้าที่ตรวจสอบ" // ข้อความบันทึกเพิ่มเติม
         }),
       })
       if (response.ok) {
-        alert("ส่งคำขอจองแล้ว รอการอนุญาตจากเจ้าหน้าที่")
+        alert("ส่งคำขอจองแล้ว รอการอนุญาต")
         router.push('/user/history')
       }
-    } catch (error) {
-      alert("เกิดข้อผิดพลาด")
-    } finally {
-      setIsBooking(false)
-    }
+    } catch (error) { alert("เกิดข้อผิดพลาด") } finally { setIsBooking(false) }
   }
 
   if (isLoading) return <div className="p-10 text-center">Loading...</div>
@@ -70,7 +67,8 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
         <div>
           <Image src={product.img} alt={product.name} width={500} height={300} className="rounded-xl border" />
           <h1 className="text-3xl font-bold mt-4">{product.name}</h1>
-          <p className="text-muted-foreground mt-2">{product.description}</p>
+          <Badge variant="outline" className="mt-2">คงเหลือ: {product.stock} ชิ้น</Badge>
+          <p className="text-muted-foreground mt-4">{product.description}</p>
         </div>
         <div className="bg-card border rounded-2xl p-6 shadow-sm h-fit space-y-6">
           <h2 className="text-xl font-semibold">จองอุปกรณ์</h2>
@@ -83,7 +81,9 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0"><Calendar mode="range" selected={date} onSelect={setDate} disabled={(d) => d < new Date()} /></PopoverContent>
           </Popover>
-          <Button onClick={handleBooking} className="w-full h-12" disabled={isBooking}>{isBooking ? "กำลังส่ง..." : "ขอยืมอุปกรณ์"}</Button>
+          <Button onClick={handleBooking} className="w-full h-12" disabled={isBooking || product.stock <= 0}>
+            {product.stock <= 0 ? "สินค้าหมด" : isBooking ? "กำลังส่ง..." : "ขอยืมอุปกรณ์"}
+          </Button>
         </div>
       </div>
     </div>

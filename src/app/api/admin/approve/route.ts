@@ -5,26 +5,33 @@ import path from 'path';
 export async function PATCH(request: Request) {
     try {
         const { orderId, newStatus } = await request.json();
-        const filePath = path.join(process.cwd(), 'data', 'order.json');
+        const orderPath = path.join(process.cwd(), 'data', 'order.json');
+        const itemsPath = path.join(process.cwd(), 'data', 'items.json');
         
-        // 1. อ่านข้อมูลทั้งหมด
-        const fileContent = await fs.readFile(filePath, 'utf8');
-        let orders = JSON.parse(fileContent);
-
-        // 2. ค้นหาและแก้ไขสถานะ
+        const orders = JSON.parse(await fs.readFile(orderPath, 'utf8'));
         const orderIndex = orders.findIndex((o: any) => o.id === orderId);
-        if (orderIndex === -1) {
-            return NextResponse.json({ error: 'ไม่พบรายการจอง' }, { status: 404 });
+
+        if (orderIndex === -1) return NextResponse.json({ error: 'ไม่พบรายการ' }, { status: 404 });
+        if (orders[orderIndex].status === 'Approved') return NextResponse.json({ error: 'อนุมัติไปแล้ว' }, { status: 400 });
+
+        // ลดสต็อก
+        const items = JSON.parse(await fs.readFile(itemsPath, 'utf8'));
+        const itemIndex = items.findIndex((i: any) => i.id === orders[orderIndex].itemId || i.name === orders[orderIndex].name);
+
+        if (itemIndex !== -1) {
+            if (items[itemIndex].stock > 0) {
+                items[itemIndex].stock -= 1;
+            } else {
+                return NextResponse.json({ error: 'สต็อกหมด' }, { status: 400 });
+            }
         }
 
-        orders[orderIndex].status = newStatus; // เช่น 'Approved'
-        orders[orderIndex].role = 'ได้รับอนุญาตจาก Admin แล้ว'; // แก้ไขข้อความเพิ่มเติม
+        orders[orderIndex].status = newStatus;
+        orders[orderIndex].role = 'ได้รับอนุญาตแล้ว';
 
-        // 3. บันทึกกลับลงไฟล์
-        await fs.writeFile(filePath, JSON.stringify(orders, null, 2), 'utf8');
+        await fs.writeFile(orderPath, JSON.stringify(orders, null, 2));
+        await fs.writeFile(itemsPath, JSON.stringify(items, null, 2));
 
-        return NextResponse.json({ message: 'อัปเดตสถานะสำเร็จ' }, { status: 200 });
-    } catch (error) {
-        return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการอัปเดต' }, { status: 500 });
-    }
+        return NextResponse.json({ message: 'Success' });
+    } catch (error) { return NextResponse.json({ error: 'Error' }, { status: 500 }); }
 }
