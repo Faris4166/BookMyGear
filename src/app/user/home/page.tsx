@@ -1,12 +1,11 @@
 import React from 'react'
 import Image from 'next/image';
 import Link from 'next/link';
-import { User } from '../../../../types/user'; // import type ที่เราสร้างไว้
+import { User } from '../../../../types/user'; 
 import { item } from '../../../../types/item';
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -16,24 +15,50 @@ import {
 import { Button } from '@/components/ui/button';
 
 export default function UserHomePage() {
-  //ตัวอย่างข้อมูล user
   const currentUser: User = {
     name: 'Faris',
-    role: 'Teacher/Student' // ลองเปลี่ยนเป็น 'admin' ดู TypeScript จะฟ้อง error ทันที
+    role: 'Teacher/Student'
   };
 
-  // ตัวอย่างข้อมูล items
-  const items: item = {
-    name: 'Red Dead Redemption 2',
-    img: "/rdr2.jpg",
-    stock: 5,
-    description: 'Arthur Morgan and the Van der Linde Gang are outlaws on the run. With federal agents and bounty hunters massing on their heels, the gang must rob, steal, and fight their way across the rugged heartland in order to survive.',
-    category: 'Game',
-  };
+  // ข้อมูล items เป็น Array
+  const items: item[] = [
+    {
+      id: '1',
+      name: 'Red Dead Redemption 2',
+      img: "/rdr2.jpg",
+      stock: 5,
+      description: 'Arthur Morgan and the Van der Linde Gang are outlaws on the run...',
+      category: 'Game',
+    },
+    {
+      id: '2',
+      name: 'SONY PlayStation 5 (PS5)',
+      img: "/PS5.jpg",
+      stock: 3,
+      description: 'The PlayStation 5 (PS5) is a home video game console...',
+      category: 'Console',
+    },
+    {
+      id: '3',
+      name: 'Football',
+      img: "/football.jpg",
+      stock: 0,
+      description: 'A football is a ball inflated with air...',
+      category: 'Sport',
+    },
+    {
+      id: '4',
+      name: 'Macbook Pro',
+      img: "/Macbook-Pro.png",
+      stock: 1,
+      description: 'The MacBook Pro is a line of Macintosh portable computers...',
+      category: 'Laptop',
+    },
+
+  ];
 
   return (
- <div className="container mx-auto p-6 space-y-6">
-      {/* ส่วนหัวหน้าเว็บ */}
+    <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Home</h1>
@@ -48,38 +73,51 @@ export default function UserHomePage() {
 
       {/* Grid ของรายการสินค้า */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <Card className="overflow-hidden flex flex-col hover:shadow-lg transition-shadow">
-          {/* รูปภาพสินค้าพร้อมควบคุมสัดส่วน */}
-          <div className="relative aspect-video w-full overflow-hidden">
-            <Image
-              src={items.img}
-              alt={items.name}
-              fill // ใช้ fill เพื่อให้รูปขยายเต็ม div พ่อ
-              className="object-cover hover:scale-105 transition-transform duration-300 p-2.5"
-            />
-          </div>
-
-          <CardHeader className="space-y-1">
-            <div className="flex justify-between items-start">
-              <CardTitle className="text-xl line-clamp-1">{items.name}</CardTitle>
-              <Badge variant="outline">{items.stock} Left</Badge>
+        {/* ใช้ .map() เพื่อวนลูปแสดง Card ตามจำนวน items */}
+        {items.map((product) => (
+          <Card key={product.id} className="overflow-hidden flex flex-col hover:shadow-lg transition-shadow">
+            <div className="relative aspect-video w-full overflow-hidden">
+              <Image
+                src={product.img}
+                alt={product.name}
+                fill
+                className="object-cover hover:scale-105 transition-transform duration-300 p-2.5"
+              />
             </div>
-            {/* ปรับให้ truncate ทำงานได้ดีขึ้นด้วย line-clamp-2 */}
-            <CardDescription className="line-clamp-2 min-h-[40px]">
-              {items.description}
-            </CardDescription>
-          </CardHeader>
 
-          <CardContent className="flex-grow">
-            <Badge variant="secondary">{items.category}</Badge>
-          </CardContent>
+            <CardHeader className="space-y-1">
+              <div className="flex justify-between items-start">
+                <CardTitle className="text-xl line-clamp-1">{product.name}</CardTitle>
+                {/* ปรับสี Badge ตามสถานะ stock */}
+                <Badge variant={product.stock > 0 ? "outline" : "destructive"}>
+                   {product.stock > 0 ? `${product.stock} Stock` : "Out of Stock"}
+                </Badge>
+              </div>
+              <CardDescription className="line-clamp-2 min-h-[40px]">
+                {product.description}
+              </CardDescription>
+            </CardHeader>
 
-          <CardFooter className="pt-0">
-            <Button asChild className="w-full">
-              <Link href="/user/booking">Book Now</Link>
-            </Button>
-          </CardFooter>
-        </Card>
+            <CardContent className="flex-grow">
+              <Badge variant="secondary">{product.category}</Badge>
+            </CardContent>
+
+            <CardFooter className="pt-0">
+              {/* ตรวจสอบเงื่อนไข disabled ถ้า stock เป็น 0 */}
+              <Button
+                asChild={product.stock > 0} 
+                className="w-full"
+                disabled={product.stock <= 0}
+              >
+                {product.stock > 0 ? (
+                  <Link href={`/user/booking/${product.id}`}>Book Now</Link>
+                ) : (
+                  <span>Unavailable</span>
+                )}
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
       </div>
     </div>
   )
