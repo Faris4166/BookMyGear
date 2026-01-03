@@ -1,0 +1,38 @@
+[
+  {
+    "id": "1",
+    "name": "Red Dead Redemption 2",
+    "img": "/upload/Red-Dead-Redemption-2.jpg",
+    "stock": 5,
+    "description": "Arthur Morgan and the Van der Linde Gang are outlaws on the run...",
+    "category": "Game",
+    "role": "You do not talk about Fight Club."
+  },
+  {
+    "id": "2",
+    "name": "SONY PlayStation 5 (PS5)",
+    "img": "/upload/PS5.jpg",
+    "stock": 3,
+    "description": "The PlayStation 5 (PS5) is a home video game console...",
+    "category": "Console",
+    "role": "You do not talk about Fight Club."
+  },
+  {
+    "id": "3",
+    "name": "Football",
+    "img": "/upload/football.webp",
+    "stock": 0,
+    "description": "A football is a ball inflated with air...",
+    "category": "Sport",
+    "role": "You do not talk about Fight Club."
+  },
+  {
+    "id": "4",
+    "name": "Macbook Pro",
+    "img": "/upload/Macbook-Pro.png",
+    "stock": 1,
+    "description": "The MacBook Pro is a line of Macintosh portable computers...",
+    "category": "Laptop",
+    "role": "You do not talk about Fight Club."
+  }
+]

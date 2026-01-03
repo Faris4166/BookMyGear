@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Red Dead Redemption 2",
+    "img": "/upload/Red-Dead-Redemption-2.jpg",
+    "description": "Arthur Morgan and the Van der Linde Gang are outlaws on the run...",
+    "category": "Game",
+    "datastart": "2026-01-03",
+    "dataend": "2026-01-06",
+    "status": "Completed"
+  },
+  {
+    "name": "SONY PlayStation 5 (PS5)",
+    "img": "/upload/PS5.jpg",
+    "description": "The PlayStation 5 (PS5) is a home video game console...",
+    "category": "Console",
+    "datastart": "2026-01-03",
+    "dataend": "2026-01-06",
+    "status": "Completed"
+  },
+  {
+    "name": "Red Dead Redemption 2",
+    "img": "/upload/Red-Dead-Redemption-2.jpg",
+    "description": "Arthur Morgan and the Van der Linde Gang are outlaws on the run...",
+    "category": "Game",
+    "datastart": "2026-01-03",
+    "dataend": "2026-01-06",
+    "role": "รอเจ้าหน้าที่ตรวจสอบ",
+    "id": "1767454059464",
+    "status": "Pending",
+    "createdAt": "2026-01-03T15:27:39.464Z"
+  }
+]
