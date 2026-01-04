@@ -4,7 +4,14 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { UserButton, SignedIn } from "@clerk/nextjs"
-import { Package2, History, Home, Menu, LayoutDashboard } from "lucide-react"
+import { 
+  Package2, 
+  History, 
+  Home, 
+  Menu, 
+  Boxes, 
+  ClipboardList 
+} from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import {
@@ -16,14 +23,25 @@ import {
 } from "@/components/ui/navigation-menu"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { ModeToggle } from "./ModeToggle"
 
-const navItems = [
+// กำหนดเมนูสำหรับแต่ละฝั่ง
+const userNavItems = [
   { title: "Home", href: "/user/home", icon: Home },
   { title: "History", href: "/user/history", icon: History },
 ]
 
+const adminNavItems = [
+  { title: "Manage Items", href: "/admin/manage-items", icon: Boxes },
+  { title: "Manage Orders", href: "/admin/manage-order", icon: ClipboardList },
+]
+
 export function Navbar() {
   const pathname = usePathname()
+  
+  // ตรวจสอบว่าเป็น path ของ admin หรือไม่
+  const isAdminPath = pathname.startsWith('/admin')
+  const navItems = isAdminPath ? adminNavItems : userNavItems
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
@@ -31,12 +49,12 @@ export function Navbar() {
         
         {/* Brand Logo */}
         <div className="flex items-center gap-10">
-          <Link href="/user/home" className="flex items-center space-x-2 group">
+          <Link href={isAdminPath ? "/admin/manage-items" : "/user/home"} className="flex items-center space-x-2 group">
             <div className="p-2 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
               <Package2 className="h-6 w-6 text-primary" />
             </div>
             <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-              EQUIP<span className="text-primary">HUB</span>
+              EQUIP<span className="text-primary">{isAdminPath ? "ADMIN" : "HUB"}</span>
             </span>
           </Link>
 
@@ -47,20 +65,22 @@ export function Navbar() {
                 const isActive = pathname === item.href
                 return (
                   <NavigationMenuItem key={item.href}>
-                    <Link href={item.href} legacyBehavior passHref>
-                      <NavigationMenuLink
+                    {/* แก้ไข legacyBehavior โดยใช้ asChild */}
+                    <NavigationMenuLink asChild>
+                      <Link
+                        href={item.href}
                         className={cn(
                           navigationMenuTriggerStyle(),
                           "relative h-10 px-5 text-sm font-medium transition-all hover:bg-transparent",
-                          isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                          isActive ? "text-primary bg-accent/50" : "text-muted-foreground hover:text-foreground"
                         )}
                       >
                         {item.title}
                         {isActive && (
                           <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
                         )}
-                      </NavigationMenuLink>
-                    </Link>
+                      </Link>
+                    </NavigationMenuLink>
                   </NavigationMenuItem>
                 )
               })}
@@ -70,12 +90,10 @@ export function Navbar() {
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-4">
-          <div className="hidden md:block mr-2 text-right">
-             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Status</p>
-             <p className="text-xs font-medium text-green-500 flex items-center gap-1 justify-end">
-               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> 
-               Authorized
-             </p>
+          
+          {/* แสดง ModeToggle บน Desktop */}
+          <div className="hidden md:block">
+            <ModeToggle />
           </div>
 
           <SignedIn>
@@ -85,7 +103,6 @@ export function Navbar() {
                 appearance={{
                   elements: {
                     avatarBox: "h-9 w-9 border-2 border-primary/20 hover:border-primary/50 transition-all shadow-sm",
-                    userButtonPopoverCard: "shadow-2xl border-border/50"
                   }
                 }}
               />
@@ -102,8 +119,14 @@ export function Navbar() {
             <SheetContent side="right" className="w-[300px] border-l-border/40 backdrop-blur-lg">
               <div className="flex flex-col gap-6 mt-10">
                 <div className="px-2">
-                   <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-4">Main Menu</h2>
+                   <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em] mb-4 px-4">
+                     {isAdminPath ? "Admin Management" : "Main Menu"}
+                   </h2>
                    <nav className="flex flex-col gap-2">
+                    {/* แสดง ModeToggle ใน Mobile Menu */}
+                    <div className="px-4 mb-2">
+                      <ModeToggle />
+                    </div>
                     {navItems.map((item) => (
                       <Link
                         key={item.href}
