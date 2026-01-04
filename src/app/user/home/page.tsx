@@ -1,63 +1,97 @@
 import React from 'react'
 import Image from 'next/image';
 import Link from 'next/link';
-import { promises as fs } from 'fs'; // เพิ่มการนำเข้า fs
-import path from 'path'; // เพิ่มการนำเข้า path
-import { User } from '../../../../types/user';
+import { promises as fs } from 'fs';
+import path from 'path';
 import { item } from '../../../../types/item';
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from '@/components/ui/button';
+import { Separator } from "@/components/ui/separator"; // แนะนำให้ใช้ Separator จาก UI library
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { Package2, UserCircle } from "lucide-react"; // เพิ่ม Icon เพื่อความสวยงาม
 
-export default async function UserHomePage() { // เปลี่ยนเป็น async function
-  const currentUser: User = {
-    name: 'Faris',
-    role: 'Teacher/Student'
-  };
+export default async function UserHomePage() {
+  const user = await currentUser();
+  const { sessionClaims } = await auth();
 
-  // ดึงข้อมูลจากไฟล์ JSON
+  const userRole = (sessionClaims?.metadata?.role as string) || 'Student/Teacher';
+
   const filePath = path.join(process.cwd(), 'data', 'items.json');
   const fileContent = await fs.readFile(filePath, 'utf8');
   const items: item[] = JSON.parse(fileContent);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* ส่วนหัวคงเดิม */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-serif tracking-tight">Home</h1>
-          <p className="text-muted-foreground text-sm">Welcome back, {currentUser.name}</p>
+    <div className="max-w-7xl mx-auto p-6 md:p-8 space-y-8">
+      {/* --- Header Section --- */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">Home</h1>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <UserCircle className="w-4 h-4" />
+            <p>Welcome back, <span className="font-medium text-foreground">{user?.firstName}</span></p>
+          </div>
         </div>
-        <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
-          {currentUser.role}
-        </Badge>
+        
+        <div className="flex items-center gap-3 bg-secondary/50 px-4 py-2 rounded-full w-fit">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-sm font-semibold uppercase tracking-wider">{userRole}</span>
+        </div>
       </div>
 
-      <hr className="border-border" />
+      <Separator />
 
-      {/* Grid ของรายการสินค้าที่ดึงมาจาก JSON */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {/* --- Grid Section --- */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {items.map((product) => (
-          <Card key={product.id} className="overflow-hidden flex flex-col hover:shadow-lg transition-shadow">
-            {/* รายละเอียด Card คงเดิม */}
-            <div className="relative aspect-video w-full overflow-hidden">
-              <Image src={product.img} alt={product.name} fill className="object-cover hover:scale-105 transition-transform duration-300 p-2.5" />
-            </div>
-            <CardHeader className="space-y-1">
-              <div className="flex justify-between items-start">
-                <CardTitle className="text-xl line-clamp-1">{product.name}</CardTitle>
-                <Badge variant={product.stock > 0 ? "outline" : "destructive"}>
-                  {product.stock > 0 ? `${product.stock} Stock` : "Out of Stock"}
+          <Card key={product.id} className="group border-none shadow-md hover:shadow-xl transition-all duration-300 flex flex-col bg-card">
+            {/* Image Container */}
+            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-xl">
+              <Image 
+                src={product.img} 
+                alt={product.name} 
+                fill 
+                className="object-cover group-hover:scale-110 transition-transform duration-500" 
+              />
+              <div className="absolute top-2 right-2">
+                <Badge className="backdrop-blur-md bg-white/70 text-black border-none">
+                  {product.category}
                 </Badge>
               </div>
-              <CardDescription className="line-clamp-2 min-h-[40px]">{product.description}</CardDescription>
+            </div>
+
+            <CardHeader className="space-y-2 pb-3">
+              <div className="flex justify-between items-start gap-2">
+                <CardTitle className="text-lg font-bold leading-tight line-clamp-1">
+                  {product.name}
+                </CardTitle>
+              </div>
+              <CardDescription className="line-clamp-2 text-sm leading-relaxed min-h-[40px]">
+                {product.description}
+              </CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow">
-              <Badge variant="secondary">{product.category}</Badge>
+
+            <CardContent className="flex-grow pb-4">
+               <div className="flex items-center gap-2 text-sm">
+                  <Package2 className="w-4 h-4 text-muted-foreground" />
+                  <span className={product.stock > 0 ? "text-foreground" : "text-destructive font-medium"}>
+                    {product.stock > 0 ? `${product.stock} items available` : "Out of stock"}
+                  </span>
+               </div>
             </CardContent>
-            <CardFooter className="pt-0">
-              <Button asChild={product.stock > 0} className="w-full" disabled={product.stock <= 0}>
-                {product.stock > 0 ? <Link href={`/user/home/${product.id}`}>Book Now</Link> : <span>Unavailable</span>}
+
+            <CardFooter className="pt-0 pb-6 px-6">
+              <Button 
+                asChild={product.stock > 0} 
+                className={`w-full font-semibold transition-all ${product.stock > 0 ? "shadow-sm" : ""}`}
+                variant={product.stock > 0 ? "default" : "secondary"}
+                disabled={product.stock <= 0}
+              >
+                {product.stock > 0 ? (
+                  <Link href={`/user/home/${product.id}`}>Book This Item</Link>
+                ) : (
+                  <span>Currently Unavailable</span>
+                )}
               </Button>
             </CardFooter>
           </Card>
