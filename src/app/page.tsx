@@ -1,50 +1,100 @@
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ChevronRight, Package, ShieldCheck, Zap } from "lucide-react"; // เพิ่ม Icon เพื่อความสวยงาม
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-6 text-center">
-      <h1 className="text-5xl font-extrabold tracking-tight mb-4 text-primary">
-        Equipment Booking System
-      </h1>
-      <p className="text-xl text-muted-foreground mb-8 max-w-md">
-        ระบบยืม-คืนอุปกรณ์อัจฉริยะ จัดการง่าย สะดวก และรวดเร็ว
-      </p>
+    <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-background">
+      {/* Background Decoration - แสงฟุ้งๆ ด้านหลัง */}
+      <div className="absolute top-0 -z-10 h-full w-full">
+        <div className="absolute bottom-auto left-auto right-0 top-0 h-[500px] w-[500px] -translate-x-[30%] translate-y-[20%] rounded-full bg-primary/10 opacity-50 blur-[80px]"></div>
+      </div>
 
-      {/* ถ้ายังไม่ได้ Login */}
-      <SignedOut>
-        <div className="flex gap-4">
-          <SignInButton mode="modal">
-            <Button size="lg" className="px-8 font-semibold">
-              ลงชื่อเข้าใช้งาน
-            </Button>
-          </SignInButton>
+      <main className="container z-10 flex flex-col items-center px-6 text-center">
+        {/* Badge ประชาสัมพันธ์เล็กๆ */}
+        <div className="mb-6 inline-flex items-center rounded-full border bg-muted/50 px-3 py-1 text-sm font-medium">
+          <span className="text-primary">New</span>
+          <span className="mx-2 h-4 w-[1px] bg-border"></span>
+          <span>เวอร์ชัน 1.0.5 เปิดใช้งานแล้ววันนี้</span>
         </div>
-      </SignedOut>
 
-      {/* ถ้า Login แล้ว */}
-      <SignedIn>
-        <div className="flex flex-col items-center gap-6">
-          <div className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm border">
-            <UserButton afterSignOutUrl="/" />
-            <div className="text-left">
-              <p className="text-sm font-medium">เข้าสู่ระบบสำเร็จ</p>
-              <p className="text-xs text-muted-foreground">ยินดีต้อนรับกลับมาครับ</p>
+        <h1 className="max-w-3xl text-5xl font-extrabold tracking-tight sm:text-6xl md:text-7xl">
+          Equipment <span className="text-primary">Booking</span> System
+        </h1>
+        
+        <p className="mt-6 max-w-[42rem] leading-normal text-muted-foreground sm:text-xl sm:leading-8">
+          ระบบยืม-คืนอุปกรณ์อัจฉริยะ จัดการง่าย สะดวก และรวดเร็ว 
+          ช่วยให้การบริหารจัดการทรัพยากรในองค์กรของคุณเป็นเรื่องง่าย
+        </p>
+
+        <div className="mt-10 flex flex-wrap justify-center gap-4">
+          {/* ถ้ายังไม่ได้ Login */}
+          <SignedOut>
+            <SignInButton mode="modal">
+              <Button size="lg" className="h-12 px-8 text-base font-semibold transition-all hover:scale-105">
+                เริ่มต้นใช้งานฟรี <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </SignInButton>
+            <Button variant="outline" size="lg" className="h-12 px-8 text-base">
+              ดูคู่มือการใช้งาน
+            </Button>
+          </SignedOut>
+
+          {/* ถ้า Login แล้ว */}
+          <SignedIn>
+            <div className="flex flex-col items-center gap-8">
+              {/* Profile Card แบบมินิมอล */}
+              <div className="flex items-center gap-4 rounded-full border bg-card p-2 pr-6 shadow-sm">
+                <UserButton afterSignOutUrl="/" />
+                <div className="text-left">
+                  <p className="text-sm font-semibold">ยินดีต้อนรับกลับมา</p>
+                  <p className="text-xs text-muted-foreground">พร้อมจัดการอุปกรณ์ของคุณแล้ว</p>
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap justify-center gap-4">
+                <Button asChild size="lg" className="h-12 px-8">
+                  <Link href="/user/home">ไปที่หน้ายืมอุปกรณ์</Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="h-12 px-8">
+                  <Link href="/admin/manage-order">จัดการระบบ (Admin)</Link>
+                </Button>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex gap-4">
-            <Button asChild variant="default" size="lg">
-              <Link href="/user/home">ไปที่หน้ายืมอุปกรณ์</Link>
-            </Button>
-            {/* ปุ่มนี้จะโชว์ให้ Admin (เราจะเช็ค Role ในขั้นตอนถัดไป) */}
-            <Button asChild variant="outline" size="lg">
-              <Link href="/admin/manage-order">จัดการระบบ (Admin)</Link>
-            </Button>
-          </div>
+          </SignedIn>
         </div>
-      </SignedIn>
+
+        {/* ส่วนแสดงจุดเด่น (Features) แบบสั้นๆ */}
+        <div className="mt-20 grid grid-cols-1 gap-8 sm:grid-cols-3">
+          <FeatureCard 
+            icon={<Zap className="h-6 w-6 text-primary" />}
+            title="รวดเร็ว"
+            description="จองอุปกรณ์ได้ในไม่กี่คลิก"
+          />
+          <FeatureCard 
+            icon={<Package className="h-6 w-6 text-primary" />}
+            title="ครบถ้วน"
+            description="เช็คสถานะอุปกรณ์ได้ Real-time"
+          />
+          <FeatureCard 
+            icon={<ShieldCheck className="h-6 w-6 text-primary" />}
+            title="ปลอดภัย"
+            description="ระบบยืนยันตัวตนที่เชื่อถือได้"
+          />
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// Component ย่อยสำหรับ Feature
+function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2 p-4">
+      <div className="rounded-lg bg-primary/10 p-3">{icon}</div>
+      <h3 className="font-bold">{title}</h3>
+      <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }
