@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { ClerkProvider } from '@clerk/nextjs'
+import { Navbar } from "@/components/Navbar"
 import './globals.css'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from "@/components/theme-provider"
@@ -30,14 +32,15 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
-        <body className={inter.className}>
+        <body className={`${inter.className} ${geistSans.variable} ${geistMono.variable} antialiased`}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <Navbar />
+            <main className="min-h-screen bg-background">{children}</main>
           </ThemeProvider>
         </body>
       </html>
