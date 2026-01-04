@@ -16,7 +16,7 @@ export default function LandingPage() {
         <div className="mb-6 inline-flex items-center rounded-full border bg-muted/50 px-3 py-1 text-sm font-medium">
           <span className="text-primary">New</span>
           <span className="mx-2 h-4 w-[1px] bg-border"></span>
-          <span>เวอร์ชัน 1.0.5 เปิดใช้งานแล้ววันนี้</span>
+          <span>เวอร์ชัน 1.0.10 เปิดใช้งานแล้ววันนี้</span>
         </div>
 
         <h1 className="max-w-3xl text-5xl font-extrabold tracking-tight sm:text-6xl md:text-7xl">

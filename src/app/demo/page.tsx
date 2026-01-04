@@ -4,7 +4,7 @@ export default function DashboardPage() {
   // สมมติว่านี่คือข้อมูลที่ได้จาก API หรือ Database
   const currentUser: User = {
     name: 'Somchai',
-    role: 'admin' // ลองเปลี่ยนเป็น 'guest' ดู TypeScript จะฟ้อง error ทันที
+    role: 'Admin' // ลองเปลี่ยนเป็น 'guest' ดู TypeScript จะฟ้อง error ทันที
   };
 
   return (
@@ -15,7 +15,7 @@ export default function DashboardPage() {
       <hr className="my-4" />
 
       {/* ตัวอย่างการเช็คเงื่อนไขจาก Role */}
-      {currentUser.role === 'admin' ? (
+      {currentUser.role === 'Admin' ? (
         <div className="bg-red-100 p-4 border-l-4 border-red-500">
           <h2 className="font-bold">Admin Panel</h2>
           <p>คุณสามารถจัดการระบบ ลบยูเซอร์ หรือแก้ไขข้อมูลได้</p>
