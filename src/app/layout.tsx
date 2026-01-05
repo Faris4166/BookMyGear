@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bokking System  ",
-  description: "Booking system for resources",
+  title: "BookMyGear ",
+  description: "Rent the best gear for your adventures.",
 };
 
 const inter = Inter({ subsets: ['latin'] })

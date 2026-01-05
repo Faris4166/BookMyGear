@@ -20,7 +20,7 @@ export default function LandingPage() {
         </div>
 
         <h1 className="max-w-3xl text-5xl font-extrabold tracking-tight sm:text-6xl md:text-7xl">
-          Equipment <span className="text-primary">Booking</span> System
+          BookMyGear
         </h1>
         
         <p className="mt-6 max-w-[42rem] leading-normal text-muted-foreground sm:text-xl sm:leading-8">

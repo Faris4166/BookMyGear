@@ -56,5 +56,34 @@
     "status": "Approved",
     "createdAt": "2026-01-05T02:03:27.074Z",
     "role": "ได้รับอนุญาตแล้ว"
+  },
+  {
+    "itemId": "1",
+    "name": "Red Dead Redemption 2",
+    "img": "/upload/Red-Dead-Redemption-2.jpg",
+    "description": "Arthur Morgan and the Van der Linde Gang are outlaws on the run...",
+    "category": "Game",
+    "datastart": "2026-01-05",
+    "dataend": "2026-01-21",
+    "id": "1767583511738",
+    "userId": "user_37knCAsCerdGBrGfNxOCBIvhwNa",
+    "userName": "Faris Arthan",
+    "status": "Approved",
+    "createdAt": "2026-01-05T03:25:11.738Z",
+    "role": "ได้รับอนุญาตแล้ว"
+  },
+  {
+    "itemId": "4",
+    "name": "Macbook Pro",
+    "img": "/upload/Macbook-Pro.png",
+    "description": "The MacBook Pro is a line of Macintosh portable computers...",
+    "category": "Laptop",
+    "datastart": "2026-01-05",
+    "dataend": "2026-01-08",
+    "id": "1767583602155",
+    "userId": "user_37kokCcIO9VA3CTedQn7LOEfB3m",
+    "userName": "kak boy",
+    "status": "Pending",
+    "createdAt": "2026-01-05T03:26:42.155Z"
   }
 ]
