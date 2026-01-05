@@ -40,8 +40,9 @@
     "id": "1767501129898",
     "userId": "user_37kokCcIO9VA3CTedQn7LOEfB3m",
     "userName": "kak boy",
-    "status": "Pending",
-    "createdAt": "2026-01-04T04:32:09.898Z"
+    "status": "Approved",
+    "createdAt": "2026-01-04T04:32:09.898Z",
+    "role": "ได้รับอนุญาตแล้ว"
   },
   {
     "itemId": "1767578558535",
@@ -84,8 +85,9 @@
     "id": "1767583602155",
     "userId": "user_37kokCcIO9VA3CTedQn7LOEfB3m",
     "userName": "kak boy",
-    "status": "Pending",
-    "createdAt": "2026-01-05T03:26:42.155Z"
+    "status": "Rejected",
+    "createdAt": "2026-01-05T03:26:42.155Z",
+    "role": "ไม่ได้รับอนุญาต"
   },
   {
     "itemId": "1767600744638",
