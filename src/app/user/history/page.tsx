@@ -18,8 +18,14 @@ export default async function HistoryUser() {
     const filePath = path.join(process.cwd(), 'data', 'order.json');
     const fileContent = await fs.readFile(filePath, 'utf8');
     const allOrders = JSON.parse(fileContent);
-    // Filter orders for the current user and reverse to show latest first
-    orders = allOrders.filter((order: any) => order.userId === user.id).reverse();
+    // Filter and sort orders to show latest first
+    orders = allOrders
+      .filter((order: any) => order.userId === user.id)
+      .sort((a: any, b: any) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : Number(a.id) || 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : Number(b.id) || 0;
+        return timeB - timeA;
+      });
   } catch (e) { orders = []; }
 
   return (
@@ -37,8 +43,19 @@ export default async function HistoryUser() {
                     </div>
                     <div>
                       <p className="font-bold text-lg mb-2">{item.name}</p>
-                      <Badge variant={item.status === 'Completed' ? 'secondary' : 'outline'}>
-                        {item.status === 'Pending' ? 'รอการอนุญาต' : item.status}
+                      <Badge
+                        variant={
+                          item.status === 'Approved' ? 'secondary' :
+                            item.status === 'Rejected' ? 'destructive' :
+                              'outline'
+                        }
+                      >
+                        {
+                          item.status === 'Pending' ? 'รอการอนุญาต' :
+                            item.status === 'Approved' ? 'ได้รับอนุญาตแล้ว' :
+                              item.status === 'Rejected' ? 'ไม่ได้รับอนุญาต' :
+                                item.status
+                        }
                       </Badge>
                     </div>
                   </div>

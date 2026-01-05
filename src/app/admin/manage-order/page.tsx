@@ -18,19 +18,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Loader2, CheckCircle, RefreshCcw, LayoutDashboard } from "lucide-react"
+import { Loader2, CheckCircle, XCircle, RefreshCcw, LayoutDashboard } from "lucide-react"
 
 export default function ManageOrderPage() {
   const { user } = useUser(); // ข้อมูลผู้ใช้ที่ล็อกอิน
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
 
   const fetchOrders = async () => {
     try {
       setLoading(true)
       const res = await fetch('/api/admin/orders')
       const data = await res.json()
-      setOrders(Array.isArray(data) ? data.reverse() : [])
+      setOrders(Array.isArray(data) ? data : [])
     } catch (e) {
       console.error(e)
     } finally {
@@ -40,15 +41,33 @@ export default function ManageOrderPage() {
 
   useEffect(() => { fetchOrders() }, [])
 
-  const handleApprove = async (orderId: string) => {
+  const handleUpdateStatus = async (orderId: string, newStatus: 'Approved' | 'Rejected') => {
+    if (processingIds.has(orderId)) return;
+
     try {
+      setProcessingIds(prev => new Set(prev).add(orderId))
       const res = await fetch('/api/admin/approve', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, newStatus: 'Approved' })
+        body: JSON.stringify({ orderId, newStatus })
       })
-      if (res.ok) { fetchOrders() }
-    } catch (e) { alert("Error") }
+
+      const data = await res.json()
+
+      if (res.ok) {
+        fetchOrders()
+      } else {
+        alert(data.error || "ไม่สามารถดำเนินการได้")
+      }
+    } catch (e) {
+      alert("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+    } finally {
+      setProcessingIds(prev => {
+        const next = new Set(prev)
+        next.delete(orderId)
+        return next
+      })
+    }
   }
 
   if (loading) return (
@@ -116,21 +135,41 @@ export default function ManageOrderPage() {
                     </TableCell>
                     <TableCell className="p-4">
                       <Badge
-                        variant={order.status === 'Approved' ? 'secondary' : 'outline'}
-                        className={order.status === 'Approved' ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400' : ''}
+                        variant={order.status === 'Approved' ? 'secondary' : order.status === 'Rejected' ? 'destructive' : 'outline'}
+                        className={
+                          order.status === 'Approved'
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400'
+                            : order.status === 'Rejected'
+                              ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400'
+                              : ''
+                        }
                       >
-                        {order.status === 'Pending' ? 'รอการอนุญาต' : 'ได้รับอนุญาตแล้ว'}
+                        {order.status === 'Pending' ? 'รอการอนุญาต' : order.status === 'Approved' ? 'ได้รับอนุญาตแล้ว' : 'ไม่ได้รับอนุญาต'}
                       </Badge>
                     </TableCell>
                     <TableCell className="p-4 text-center">
                       {order.status === 'Pending' ? (
-                        <Button
-                          size="sm"
-                          onClick={() => handleApprove(order.id)}
-                          className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
-                        >
-                          <CheckCircle className="w-4 h-4 mr-2" /> อนุมัติ
-                        </Button>
+                        <div className="flex justify-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdateStatus(order.id, 'Approved')}
+                            className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                            disabled={processingIds.has(order.id)}
+                          >
+                            {processingIds.has(order.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                            อนุมัติ
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleUpdateStatus(order.id, 'Rejected')}
+                            className="shadow-sm"
+                            disabled={processingIds.has(order.id)}
+                          >
+                            {processingIds.has(order.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
+                            ไม่อนุญาติ
+                          </Button>
+                        </div>
                       ) : (
                         <span className="text-xs text-muted-foreground italic">ดำเนินการแล้ว</span>
                       )}

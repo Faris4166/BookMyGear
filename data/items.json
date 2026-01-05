@@ -50,5 +50,13 @@
     "description": "ไม่มี",
     "img": "/upload/1767578522245-header.jpg",
     "id": "1767578558535"
+  },
+  {
+    "name": "ข้าวมันไก่",
+    "category": "FOOD",
+    "stock": 2,
+    "description": "ความรักคือข้าวมันไก่",
+    "img": "/upload/1767600714804-bbf899f7ab4341dea4aec6330c2afafd.jpg",
+    "id": "1767600744638"
   }
 ]

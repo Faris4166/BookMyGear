@@ -62,7 +62,7 @@ export function Navbar() {
               <Package2 className="h-6 w-6 text-primary" />
             </div>
             <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-              EQUIP<span className="text-primary">{isAdminPath ? "ADMIN" : "HUB"}</span>
+              BookMyGear
             </span>
           </Link>
 
