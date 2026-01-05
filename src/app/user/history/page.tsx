@@ -6,12 +6,20 @@ import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { ArrowRight, CalendarArrowDown, CalendarArrowUp, Info } from 'lucide-react';
 
+import { currentUser } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
+
 export default async function HistoryUser() {
+  const user = await currentUser();
+  if (!user) redirect('/sign-in');
+
   let orders = [];
   try {
     const filePath = path.join(process.cwd(), 'data', 'order.json');
     const fileContent = await fs.readFile(filePath, 'utf8');
-    orders = JSON.parse(fileContent).reverse(); // เอาที่จองล่าสุดขึ้นก่อน
+    const allOrders = JSON.parse(fileContent);
+    // Filter orders for the current user and reverse to show latest first
+    orders = allOrders.filter((order: any) => order.userId === user.id).reverse();
   } catch (e) { orders = []; }
 
   return (

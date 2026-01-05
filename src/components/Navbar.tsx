@@ -3,7 +3,8 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { UserButton, SignedIn } from "@clerk/nextjs"
+// 1. เพิ่ม useUser เข้ามาใน import
+import { UserButton, SignedIn, useUser } from "@clerk/nextjs"
 import { 
   Package2, 
   History, 
@@ -25,7 +26,6 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { ModeToggle } from "./ModeToggle"
 
-// กำหนดเมนูสำหรับแต่ละฝั่ง
 const userNavItems = [
   { title: "Home", href: "/user/home", icon: Home },
   { title: "History", href: "/user/history", icon: History },
@@ -39,7 +39,15 @@ const adminNavItems = [
 export function Navbar() {
   const pathname = usePathname()
   
-  // ตรวจสอบว่าเป็น path ของ admin หรือไม่
+  // 2. ดึงสถานะการ Login
+  const { isSignedIn, isLoaded } = useUser();
+
+  // 3. เงื่อนไขสำคัญ: ถ้ายังโหลดไม่เสร็จ หรือ ยังไม่ Login -> ไม่ต้องแสดง Navbar เลย (return null)
+  if (!isLoaded || !isSignedIn) {
+    return null;
+  }
+
+  // --- โค้ดส่วนที่เหลือเหมือนเดิม ---
   const isAdminPath = pathname.startsWith('/admin')
   const navItems = isAdminPath ? adminNavItems : userNavItems
 
@@ -65,7 +73,6 @@ export function Navbar() {
                 const isActive = pathname === item.href
                 return (
                   <NavigationMenuItem key={item.href}>
-                    {/* แก้ไข legacyBehavior โดยใช้ asChild */}
                     <NavigationMenuLink asChild>
                       <Link
                         href={item.href}
@@ -91,7 +98,6 @@ export function Navbar() {
         {/* Right Side Actions */}
         <div className="flex items-center gap-4">
           
-          {/* แสดง ModeToggle บน Desktop */}
           <div className="hidden md:block">
             <ModeToggle />
           </div>
@@ -123,7 +129,6 @@ export function Navbar() {
                      {isAdminPath ? "Admin Management" : "Main Menu"}
                    </h2>
                    <nav className="flex flex-col gap-2">
-                    {/* แสดง ModeToggle ใน Mobile Menu */}
                     <div className="px-4 mb-2">
                       <ModeToggle />
                     </div>
