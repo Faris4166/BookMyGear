@@ -24,14 +24,24 @@ export async function PATCH(request: Request) {
 
         if (error) throw error;
 
-        // *ฟีเจอร์เสริม: ถ้า Approved ให้ไปลด Stock ในตาราง items*
+        // *ฟีเจอร์: ถ้า Approved ให้ไปลด Stock ในตาราง items*
         if (status === 'approved') {
-            // ดึง item_id จาก order นี้มาก่อน
             const order = data[0];
-            /* Logic ลดสต็อก: 
-               คุณสามารถเขียน RPC Function ใน Supabase หรือทำตรงนี้แบบง่ายๆ
-               await supabase.rpc('decrement_stock', { item_id: order.item_id });
-            */
+            if (order && order.item_id) {
+                // ดึง stock ปัจจุบัน
+                const { data: itemData, error: itemError } = await supabase
+                    .from('items')
+                    .select('stock')
+                    .eq('id', order.item_id)
+                    .single();
+                
+                if (!itemError && itemData && itemData.stock > 0) {
+                    await supabase
+                        .from('items')
+                        .update({ stock: itemData.stock - 1 })
+                        .eq('id', order.item_id);
+                }
+            }
         }
 
         return NextResponse.json(data[0]);
