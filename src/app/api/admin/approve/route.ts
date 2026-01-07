@@ -7,11 +7,13 @@ export async function PATCH(request: Request) {
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     try {
-        const { orderId, newStatus: status } = await request.json(); // status: 'approved', 'rejected'
+        const { orderId, newStatus } = await request.json();
+        const status = newStatus?.toLowerCase();
 
-        if (!['approved', 'rejected', 'returned'].includes(status)) {
+        if (!['approved', 'rejected', 'returned', 'pending'].includes(status)) {
             return NextResponse.json({ error: "Invalid status" }, { status: 400 });
         }
+
 
         // อัปเดตสถานะ
         const { data, error } = await supabase
