@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, memo } from 'react'
 import { useUser } from "@clerk/nextjs"; // ดึงข้อมูล User จาก Clerk
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -40,13 +40,13 @@ export default function ManageOrderPage() {
     title: "", desc: "", type: 'success'
   })
 
-  const showPopup = (title: string, desc: string, type: 'success' | 'error') => {
+  const showPopup = useCallback((title: string, desc: string, type: 'success' | 'error') => {
     setDialogStatus({ title, desc, type })
     setDialogOpen(true)
-  }
+  }, [])
 
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true)
       const res = await fetch('/api/admin/orders')
@@ -57,11 +57,12 @@ export default function ManageOrderPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
 
   useEffect(() => { fetchOrders() }, [])
 
-  const handleUpdateStatus = async (orderId: string, newStatus: 'Approved' | 'Rejected') => {
+  const handleUpdateStatus = useCallback(async (orderId: string, newStatus: 'Approved' | 'Rejected') => {
     if (processingIds.has(orderId)) return;
 
     try {
@@ -89,7 +90,8 @@ export default function ManageOrderPage() {
         return next
       })
     }
-  }
+  }, [processingIds, fetchOrders, showPopup])
+
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center">
@@ -140,62 +142,13 @@ export default function ManageOrderPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                orders.map((order, index) => (
-                  <TableRow key={order.id || index} className="hover:bg-muted/50 transition-colors">
-                    <TableCell className="p-4">
-                      <p className="font-medium text-foreground">{order.userName || 'ไม่ระบุชื่อ'}</p>
-                    </TableCell>
-                    <TableCell className="p-4">
-                      <div className="flex flex-col">
-                        <span className="font-medium text-foreground">{order.name}</span>
-                        <span className="text-xs text-muted-foreground">{order.category}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="p-4 text-sm text-foreground">
-                      {order.datastart} — {order.dataend}
-                    </TableCell>
-                    <TableCell className="p-4">
-                      <Badge
-                        variant={order.status === 'Approved' ? 'secondary' : order.status === 'Rejected' ? 'destructive' : 'outline'}
-                        className={
-                          order.status === 'Approved'
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400'
-                            : order.status === 'Rejected'
-                              ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400'
-                              : ''
-                        }
-                      >
-                        {order.status === 'Pending' ? 'รอการอนุญาต' : order.status === 'Approved' ? 'ได้รับอนุญาตแล้ว' : 'ไม่ได้รับอนุญาต'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="p-4 text-center">
-                      {order.status === 'Pending' ? (
-                        <div className="flex justify-center gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleUpdateStatus(order.id, 'Approved')}
-                            className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
-                            disabled={processingIds.has(order.id)}
-                          >
-                            {processingIds.has(order.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                            อนุมัติ
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleUpdateStatus(order.id, 'Rejected')}
-                            className="shadow-sm"
-                            disabled={processingIds.has(order.id)}
-                          >
-                            {processingIds.has(order.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
-                            ไม่อนุญาติ
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">ดำเนินการแล้ว</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
+                orders.map((order) => (
+                  <OrderTableRow
+                    key={order.id}
+                    order={order}
+                    isProcessing={processingIds.has(order.id)}
+                    onUpdateStatus={handleUpdateStatus}
+                  />
                 ))
               )}
             </TableBody>
@@ -227,3 +180,70 @@ export default function ManageOrderPage() {
     </div>
   )
 }
+
+const OrderTableRow = memo(({ order, isProcessing, onUpdateStatus }: {
+  order: any,
+  isProcessing: boolean,
+  onUpdateStatus: (id: string, status: 'Approved' | 'Rejected') => void
+}) => {
+  return (
+    <TableRow className="hover:bg-muted/50 transition-colors">
+      <TableCell className="p-4">
+        <p className="font-medium text-foreground">{order.userName || 'ไม่ระบุชื่อ'}</p>
+      </TableCell>
+      <TableCell className="p-4">
+        <div className="flex flex-col">
+          <span className="font-medium text-foreground">{order.name}</span>
+          <span className="text-xs text-muted-foreground">{order.category}</span>
+        </div>
+      </TableCell>
+      <TableCell className="p-4 text-sm text-foreground">
+        {order.datastart} — {order.dataend}
+      </TableCell>
+      <TableCell className="p-4">
+        <Badge
+          variant={order.status === 'Approved' ? 'secondary' : order.status === 'Rejected' ? 'destructive' : 'outline'}
+          className={
+            order.status === 'Approved'
+              ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400'
+              : order.status === 'Rejected'
+                ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400'
+                : ''
+          }
+        >
+          {order.status === 'Pending' ? 'รอการอนุญาต' : order.status === 'Approved' ? 'ได้รับอนุญาตแล้ว' : 'ไม่ได้รับอนุญาต'}
+        </Badge>
+      </TableCell>
+      <TableCell className="p-4 text-center">
+        {order.status === 'Pending' ? (
+          <div className="flex justify-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => onUpdateStatus(order.id, 'Approved')}
+              className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+              disabled={isProcessing}
+            >
+              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+              อนุมัติ
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => onUpdateStatus(order.id, 'Rejected')}
+              className="shadow-sm"
+              disabled={isProcessing}
+            >
+              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
+              ไม่อนุญาติ
+            </Button>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground italic">ดำเนินการแล้ว</span>
+        )}
+      </TableCell>
+    </TableRow>
+  )
+});
+
+OrderTableRow.displayName = "OrderTableRow";
+

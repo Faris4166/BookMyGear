@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Separator } from "@/components/ui/separator";
 import { Package2, UserCircle, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
+import { useMemo, useCallback } from 'react';
+
 
 export default function UserHomePage() {
   const { user } = useUser();
   const [items, setItems] = useState<any[]>([]);
-  const [filteredItems, setFilteredItems] = useState<any[]>([]);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const itemsPerPage = 8; // จำนวนสินค้าต่อหน้า
@@ -20,7 +22,6 @@ export default function UserHomePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('Fetching items for User Home...');
         const res = await fetch('/api/items');
         const data = await res.json();
 
@@ -28,9 +29,7 @@ export default function UserHomePage() {
           throw new Error(data.error || "Failed to fetch items");
         }
 
-        console.log('User Home items received:', data);
         setItems(Array.isArray(data) ? data : []);
-        setFilteredItems(Array.isArray(data) ? data : []);
       } catch (err: any) {
         console.error('User Home fetch error:', err);
       }
@@ -38,17 +37,20 @@ export default function UserHomePage() {
     fetchData();
   }, []);
 
-  // ระบบแบ่งหมวดหมู่ (Category Filter)
-  const categories = ["All", ...new Set(items.map((item: any) => item.category))];
+  // Optimization: Memoize categories to prevent recalculating on every render
+  const categories = useMemo(() => ["All", ...new Set(items.map((item: any) => item.category))], [items]);
 
-  useEffect(() => {
-    let result = items;
-    if (selectedCategory !== "All") {
-      result = items.filter((item) => item.category === selectedCategory);
-    }
-    setFilteredItems(result);
-    setCurrentPage(1); // รีเซ็ตไปหน้าแรกเมื่อเปลี่ยนหมวดหมู่
+  const filteredItems = useMemo(() => {
+    if (selectedCategory === "All") return items;
+    return items.filter((item) => item.category === selectedCategory);
   }, [selectedCategory, items]);
+
+  // Optimization: Reset page when category changes to avoid empty views
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory]);
+
+
 
   // ระบบแบ่งหน้า (Pagination Logic)
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -100,6 +102,8 @@ export default function UserHomePage() {
                 alt={product.name}
                 fill
                 className="object-cover group-hover:scale-110 transition-transform duration-500"
+                priority={indexOfFirstItem + currentItems.indexOf(product) < 4}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
               />
               <div className="absolute top-2 right-2">
                 <Badge className="backdrop-blur-md bg-white/70 text-black border-none">

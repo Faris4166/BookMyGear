@@ -7,17 +7,25 @@ export async function GET() {
     // ควรเช็ค Role ว่าเป็น Admin ไหม แต่ตอนนี้เช็คแค่ Login ก่อน
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // ดึงข้อมูล Orders พร้อม Join กับ Items เพื่อเอาชื่อสินค้าและรูป
+    // ดึงข้อมูล Orders พร้อม Join กับ Items เพื่อเอาชื่อสินค้า รูป และหมวดหมู่
     const { data, error } = await supabase
         .from('orders')
         .select(`
-            *,
+            id,
+            user_id,
+            user_name,
+            start_date,
+            end_date,
+            status,
+            created_at,
             items (
                 name,
-                img
+                img,
+                category
             )
         `)
         .order('created_at', { ascending: false });
+
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     

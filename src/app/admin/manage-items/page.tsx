@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, memo, useMemo } from 'react'
 import { useUser } from "@clerk/nextjs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -54,19 +54,17 @@ export default function ManageItemsPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<{ id: string, name: string } | null>(null)
 
-  const showPopup = (title: string, desc: string, type: 'success' | 'error') => {
+  const showPopup = useCallback((title: string, desc: string, type: 'success' | 'error') => {
     setDialogStatus({ title, desc, type })
     setDialogOpen(true)
-  }
+  }, [])
 
 
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     try {
       setLoading(true)
-      console.log('Fetching items from API...');
       const res = await fetch('/api/items')
       const data = await res.json()
-      console.log('Items received:', data);
 
       if (!res.ok) {
         throw new Error(data.error || "Failed to fetch items")
@@ -79,11 +77,12 @@ export default function ManageItemsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showPopup])
+
 
   useEffect(() => { fetchItems() }, [])
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     const itemData = Object.fromEntries(formData.entries())
@@ -116,17 +115,17 @@ export default function ManageItemsPage() {
     } catch (e) {
       showPopup("เกิดข้อผิดพลาด", "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ในการบันทึก", "error")
     }
-  }
+  }, [editingItem, previewUrl, showPopup, fetchItems])
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // ตรวจสอบขนาดไฟล์ (3MB)
     const MAX_SIZE = 3 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
       alert("ไฟล์มีขนาดใหญ่เกินไป (จำกัดไม่เกิน 3MB)");
-      e.target.value = ""; // รีเซ็ต input
+      e.target.value = "";
       return
     }
 
@@ -137,7 +136,6 @@ export default function ManageItemsPage() {
     try {
       const res = await fetch('/api/admin/upload', { method: 'POST', body: formData })
       const data = await res.json()
-      console.log('Upload response data:', data);
 
       if (!res.ok) {
         throw new Error(data.error || "Upload failed");
@@ -150,9 +148,10 @@ export default function ManageItemsPage() {
     } finally {
       setIsUploading(false)
     }
-  }
+  }, [showPopup])
 
-  const handleDelete = async () => {
+
+  const handleDelete = useCallback(async () => {
     if (!itemToDelete) return
 
     try {
@@ -170,7 +169,8 @@ export default function ManageItemsPage() {
       setDeleteConfirmOpen(false)
       setItemToDelete(null)
     }
-  }
+  }, [itemToDelete, showPopup, fetchItems])
+
 
 
 
@@ -313,59 +313,12 @@ export default function ManageItemsPage() {
             </TableHeader>
             <TableBody>
               {items.map((item) => (
-                <TableRow key={item.id} className="hover:bg-muted/50 transition-all group">
-                  <TableCell className="p-5">
-                    <div className="flex items-center gap-4">
-                      <div className="relative w-14 h-14 rounded-2xl overflow-hidden border shadow-sm group-hover:scale-105 transition-transform">
-                        <Image src={item.img} alt={item.name} fill className="object-cover" />
-                      </div>
-                      <div className="space-y-1 min-w-0"> {/* เพิ่ม min-w-0 เพื่อให้ flex container รู้ว่าสามารถหดตัวได้ */}
-                        <span className="font-bold block leading-tight truncate">
-                          {item.name}
-                        </span>
-                        <span
-                          className="text-xs text-muted-foreground block truncate max-w-[150px] md:max-w-[300px]"
-                          title={item.description} // เพิ่ม title เพื่อให้เอาเมาส์ชี้แล้วเห็นข้อความเต็ม
-                        >
-                          {item.description}
-                        </span>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="p-5">
-                    <Badge variant="outline" className="font-semibold px-3 py-1 rounded-lg">
-                      {item.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="p-5 text-center">
-                    <span className={`font-mono font-bold text-lg ${item.stock > 0 ? "" : "text-destructive"}`}>
-                      {item.stock}
-                    </span>
-                  </TableCell>
-                  <TableCell className="p-5 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="rounded-xl active:scale-95"
-                        onClick={() => { setEditingItem(item); setIsDialogOpen(true); }}
-                      >
-                        <Edit2 className="w-4 h-4 mr-2" /> Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="rounded-xl active:scale-95 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => {
-                          setItemToDelete({ id: item.id, name: item.name });
-                          setDeleteConfirmOpen(true);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" /> Delete
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <ItemTableRow
+                  key={item.id}
+                  item={item}
+                  onEdit={() => { setEditingItem(item); setIsDialogOpen(true); }}
+                  onDelete={() => { setItemToDelete({ id: item.id, name: item.name }); setDeleteConfirmOpen(true); }}
+                />
               ))}
               {items.length === 0 && (
                 <TableRow>
@@ -425,3 +378,62 @@ export default function ManageItemsPage() {
     </div>
   )
 }
+
+// Optimization: Memoized table row to prevent re-rendering all rows when dialog state changes
+const ItemTableRow = memo(({ item, onEdit, onDelete }: { item: any, onEdit: () => void, onDelete: () => void }) => {
+  return (
+    <TableRow className="hover:bg-muted/50 transition-all group">
+      <TableCell className="p-5">
+        <div className="flex items-center gap-4">
+          <div className="relative w-14 h-14 rounded-2xl overflow-hidden border shadow-sm group-hover:scale-105 transition-transform">
+            <Image src={item.img} alt={item.name} fill className="object-cover" sizes="56px" />
+          </div>
+          <div className="space-y-1 min-w-0">
+            <span className="font-bold block leading-tight truncate">
+              {item.name}
+            </span>
+            <span
+              className="text-xs text-muted-foreground block truncate max-w-[150px] md:max-w-[300px]"
+              title={item.description}
+            >
+              {item.description}
+            </span>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell className="p-5">
+        <Badge variant="outline" className="font-semibold px-3 py-1 rounded-lg">
+          {item.category}
+        </Badge>
+      </TableCell>
+      <TableCell className="p-5 text-center">
+        <span className={`font-mono font-bold text-lg ${item.stock > 0 ? "" : "text-destructive"}`}>
+          {item.stock}
+        </span>
+      </TableCell>
+      <TableCell className="p-5 text-center">
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-xl active:scale-95"
+            onClick={onEdit}
+          >
+            <Edit2 className="w-4 h-4 mr-2" /> Edit
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-xl active:scale-95 text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={onDelete}
+          >
+            <Trash2 className="w-4 h-4 mr-2" /> Delete
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  )
+});
+
+ItemTableRow.displayName = "ItemTableRow";
+
