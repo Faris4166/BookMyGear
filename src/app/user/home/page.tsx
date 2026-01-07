@@ -9,6 +9,13 @@ import { Separator } from "@/components/ui/separator";
 import { Package2, UserCircle, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import { useMemo, useCallback } from 'react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 
 export default function UserHomePage() {
@@ -74,22 +81,23 @@ export default function UserHomePage() {
       <Separator />
 
       {/* --- Category Filter Section --- */}
-      <div className="flex flex-wrap items-center gap-2 pb-2 overflow-x-auto">
-        <div className="flex items-center gap-2 mr-2 text-muted-foreground">
+      <div className="flex items-center gap-4 pb-2">
+        <div className="flex items-center gap-2 text-muted-foreground">
           <Filter className="w-4 h-4" />
-          <span className="text-sm font-medium">Filter:</span>
+          <span className="text-sm font-medium">Filter by Category:</span>
         </div>
-        {categories.map((cat) => (
-          <Button
-            key={cat}
-            variant={selectedCategory === cat ? "default" : "outline"}
-            size="sm"
-            className="rounded-full px-5"
-            onClick={() => setSelectedCategory(cat)}
-          >
-            {cat}
-          </Button>
-        ))}
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger className="w-[180px] rounded-full">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((cat) => (
+              <SelectItem key={cat} value={cat}>
+                {cat}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* --- Grid Section --- */}
@@ -113,7 +121,9 @@ export default function UserHomePage() {
             </div>
 
             <CardHeader className="space-y-2 pb-3">
-              <CardTitle className="text-lg font-bold leading-tight line-clamp-1">{product.name}</CardTitle>
+              <Link href={`/user/home/${product.id}`}>
+                <CardTitle className="text-lg font-bold leading-tight line-clamp-1">{product.name}</CardTitle>
+              </Link>
               <CardDescription className="line-clamp-2 text-sm leading-relaxed min-h-[40px]">
                 {product.description}
               </CardDescription>
