@@ -84,6 +84,14 @@ export default function ManageItemsPage() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    // ตรวจสอบขนาดไฟล์ (3MB)
+    const MAX_SIZE = 3 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      alert("ไฟล์มีขนาดใหญ่เกินไป (จำกัดไม่เกิน 3MB)");
+      e.target.value = ""; // รีเซ็ต input
+      return
+    }
+
     setIsUploading(true)
     const formData = new FormData()
     formData.append('file', file)
@@ -91,12 +99,18 @@ export default function ManageItemsPage() {
     try {
       const res = await fetch('/api/admin/upload', { method: 'POST', body: formData })
       const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || "Upload failed");
+      }
+
       setPreviewUrl(data.url)
-    } catch (e) {
-      alert("Upload failed")
+    } catch (e: any) {
+      alert(e.message || "เกิดข้อผิดพลาดในการอัปโหลด")
     } finally {
       setIsUploading(false)
     }
+
   }
 
   if (loading) return (
