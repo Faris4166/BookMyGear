@@ -22,7 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Loader2, Plus, Edit2, RefreshCcw, ImagePlus, Package2, Tag, Hash, FileText } from "lucide-react"
+import { Loader2, Plus, Edit2, RefreshCcw, ImagePlus, Package2, Tag, Hash, FileText, Trash2 } from "lucide-react"
 import Image from 'next/image'
 
 export default function ManageItemsPage() {
@@ -120,8 +120,25 @@ export default function ManageItemsPage() {
     } finally {
       setIsUploading(false)
     }
-
   }
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) return
+
+    try {
+      const res = await fetch(`/api/items?id=${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        alert("Item deleted successfully")
+        fetchItems()
+      } else {
+        const data = await res.json()
+        alert("Delete failed: " + data.error)
+      }
+    } catch (e) {
+      alert("Error deleting item")
+    }
+  }
+
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center">
@@ -292,14 +309,24 @@ export default function ManageItemsPage() {
                     </span>
                   </TableCell>
                   <TableCell className="p-5 text-center">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="rounded-xl active:scale-95"
-                      onClick={() => { setEditingItem(item); setIsDialogOpen(true); }}
-                    >
-                      <Edit2 className="w-4 h-4 mr-2" /> Edit
-                    </Button>
+                    <div className="flex items-center justify-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-xl active:scale-95"
+                        onClick={() => { setEditingItem(item); setIsDialogOpen(true); }}
+                      >
+                        <Edit2 className="w-4 h-4 mr-2" /> Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-xl active:scale-95 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDelete(item.id, item.name)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" /> Delete
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

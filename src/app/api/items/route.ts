@@ -87,3 +87,34 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+
+// DELETE: ลบสินค้า
+export async function DELETE(request: Request) {
+    console.log('--- DELETE /api/items ---');
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    try {
+        const { searchParams } = new URL(request.url);
+        const id = searchParams.get('id');
+
+        if (!id) {
+            return NextResponse.json({ error: "Item ID is required" }, { status: 400 });
+        }
+
+        const { error } = await supabase
+            .from('items')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Supabase delete error:', error);
+            throw error;
+        }
+
+        return NextResponse.json({ message: "Item deleted successfully" });
+    } catch (error: any) {
+        console.error('Catch error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
