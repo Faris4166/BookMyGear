@@ -37,8 +37,10 @@ export default function ManageItemsPage() {
   const fetchItems = async () => {
     try {
       setLoading(true)
+      console.log('Fetching items from API...');
       const res = await fetch('/api/items')
       const data = await res.json()
+      console.log('Items received:', data);
 
       if (!res.ok) {
         throw new Error(data.error || "Failed to fetch items")
@@ -46,7 +48,7 @@ export default function ManageItemsPage() {
 
       setItems(Array.isArray(data) ? data : [])
     } catch (e: any) {
-      console.error('Fetch items error:', e)
+      console.error('Fetch items error detail:', e)
       alert("Error: " + (e.message || "Cannot load items"))
     } finally {
       setLoading(false)
@@ -105,6 +107,7 @@ export default function ManageItemsPage() {
     try {
       const res = await fetch('/api/admin/upload', { method: 'POST', body: formData })
       const data = await res.json()
+      console.log('Upload response data:', data);
 
       if (!res.ok) {
         throw new Error(data.error || "Upload failed");
@@ -112,6 +115,7 @@ export default function ManageItemsPage() {
 
       setPreviewUrl(data.url)
     } catch (e: any) {
+      console.error('Upload error detail:', e);
       alert(e.message || "เกิดข้อผิดพลาดในการอัปโหลด")
     } finally {
       setIsUploading(false)
@@ -139,9 +143,16 @@ export default function ManageItemsPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <Button onClick={() => {
+            console.log('--- DEBUG TRIGGERED ---');
+            fetchItems();
+          }} variant="outline" size="sm" className="h-10 px-4 border-red-500 text-red-500">
+            Debug Fetch
+          </Button>
           <Button onClick={fetchItems} variant="outline" size="sm" className="h-10 px-4">
             <RefreshCcw className="w-4 h-4 mr-2" /> Refresh
           </Button>
+
 
           <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) { setEditingItem(null); setPreviewUrl(""); } }}>
             <DialogTrigger asChild>
