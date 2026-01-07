@@ -11,10 +11,10 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
-        const { itemId, startDate, endDate } = body;
+        const { itemId, datastart, dataend } = body;
 
         // Validation
-        if (!itemId || !startDate || !endDate) {
+        if (!itemId || !datastart || !dataend) {
             return NextResponse.json({ error: "Missing fields" }, { status: 400 });
         }
 
@@ -25,8 +25,8 @@ export async function POST(request: Request) {
                 user_id: user.id,
                 user_name: `${user.firstName} ${user.lastName}`, // เก็บชื่อไว้ดูง่ายๆ
                 item_id: itemId,
-                start_date: startDate,
-                end_date: endDate,
+                start_date: datastart,
+                end_date: dataend,
                 status: 'pending' // สถานะเริ่มต้น
             }])
             .select();

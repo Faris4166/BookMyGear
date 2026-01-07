@@ -7,7 +7,7 @@ export async function PATCH(request: Request) {
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     try {
-        const { orderId, status } = await request.json(); // status: 'approved', 'rejected'
+        const { orderId, newStatus: status } = await request.json(); // status: 'approved', 'rejected'
 
         if (!['approved', 'rejected', 'returned'].includes(status)) {
             return NextResponse.json({ error: "Invalid status" }, { status: 400 });

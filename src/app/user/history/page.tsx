@@ -1,7 +1,6 @@
 import React from 'react'
 import Image from 'next/image';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { supabase } from '@/lib/supabase';
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { ArrowRight, CalendarArrowDown, CalendarArrowUp, Info } from 'lucide-react';
@@ -15,18 +14,37 @@ export default async function HistoryUser() {
 
   let orders = [];
   try {
-    const filePath = path.join(process.cwd(), 'data', 'order.json');
-    const fileContent = await fs.readFile(filePath, 'utf8');
-    const allOrders = JSON.parse(fileContent);
-    // Filter and sort orders to show latest first
-    orders = allOrders
-      .filter((order: any) => order.userId === user.id)
-      .sort((a: any, b: any) => {
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : Number(a.id) || 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : Number(b.id) || 0;
-        return timeB - timeA;
-      });
-  } catch (e) { orders = []; }
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        items (
+          name,
+          img,
+          description
+        )
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Map data to match existing UI structure if needed
+    orders = data.map((order: any) => ({
+      ...order,
+      name: order.items?.name,
+      img: order.items?.img,
+      description: order.items?.description,
+      datastart: order.start_date,
+      dataend: order.end_date,
+      role: order.status === 'approved' ? 'ได้รับอนุญาตแล้ว' :
+        order.status === 'rejected' ? 'ไม่ได้รับอนุญาต' :
+          order.status === 'pending' ? 'รอการอนุญาต' : order.status
+    }));
+  } catch (e) {
+    console.error('Fetch orders error:', e);
+    orders = [];
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
