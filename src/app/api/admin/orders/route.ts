@@ -21,5 +21,19 @@ export async function GET() {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     
-    return NextResponse.json(data);
+    // แปลงข้อมูลให้ตรงกับที่ Frontend รอรับ
+    const formattedOrders = data.map((order: any) => ({
+        id: order.id,
+        userId: order.user_id,
+        userName: order.user_name,
+        name: order.items?.name || 'Unknown Item',
+        img: order.items?.img,
+        category: order.items?.category || 'General',
+        datastart: order.start_date,
+        dataend: order.end_date,
+        status: order.status.charAt(0).toUpperCase() + order.status.slice(1), // 'pending' -> 'Pending'
+        createdAt: order.created_at
+    }));
+    
+    return NextResponse.json(formattedOrders);
 }

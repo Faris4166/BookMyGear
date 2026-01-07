@@ -14,7 +14,11 @@ export async function POST(request: Request) {
 
         // กำหนดตำแหน่งเซฟไฟล์ (public/upload)
         const fileName = `${Date.now()}-${file.name}`;
-        const uploadPath = path.join(process.cwd(), 'public', 'upload', fileName);
+        const uploadDir = path.join(process.cwd(), 'public', 'upload');
+        const uploadPath = path.join(uploadDir, fileName);
+
+        // ตรวจสอบและสร้างโฟลเดอร์ถ้าไม่มี
+        await fs.mkdir(uploadDir, { recursive: true });
 
         await fs.writeFile(uploadPath, buffer);
 
