@@ -19,10 +19,21 @@ export default function UserHomePage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const res = await fetch('/api/items');
-      const data = await res.json();
-      setItems(data);
-      setFilteredItems(data);
+      try {
+        console.log('Fetching items for User Home...');
+        const res = await fetch('/api/items');
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to fetch items");
+        }
+
+        console.log('User Home items received:', data);
+        setItems(Array.isArray(data) ? data : []);
+        setFilteredItems(Array.isArray(data) ? data : []);
+      } catch (err: any) {
+        console.error('User Home fetch error:', err);
+      }
     };
     fetchData();
   }, []);
@@ -84,11 +95,11 @@ export default function UserHomePage() {
         {currentItems.map((product) => (
           <Card key={product.id} className="group border-none shadow-md hover:shadow-xl transition-all duration-300 flex flex-col bg-card">
             <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-xl">
-              <Image 
-                src={product.img} 
-                alt={product.name} 
-                fill 
-                className="object-cover group-hover:scale-110 transition-transform duration-500" 
+              <Image
+                src={product.img}
+                alt={product.name}
+                fill
+                className="object-cover group-hover:scale-110 transition-transform duration-500"
               />
               <div className="absolute top-2 right-2">
                 <Badge className="backdrop-blur-md bg-white/70 text-black border-none">
@@ -105,17 +116,17 @@ export default function UserHomePage() {
             </CardHeader>
 
             <CardContent className="flex-grow pb-4">
-               <div className="flex items-center gap-2 text-sm">
-                  <Package2 className="w-4 h-4 text-muted-foreground" />
-                  <span className={product.stock > 0 ? "text-foreground" : "text-destructive font-medium"}>
-                    {product.stock > 0 ? `${product.stock} items available` : "Out of stock"}
-                  </span>
-               </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Package2 className="w-4 h-4 text-muted-foreground" />
+                <span className={product.stock > 0 ? "text-foreground" : "text-destructive font-medium"}>
+                  {product.stock > 0 ? `${product.stock} items available` : "Out of stock"}
+                </span>
+              </div>
             </CardContent>
 
             <CardFooter className="pt-0 pb-6 px-6">
-              <Button 
-                asChild={product.stock > 0} 
+              <Button
+                asChild={product.stock > 0}
                 className="w-full font-semibold"
                 variant={product.stock > 0 ? "default" : "secondary"}
                 disabled={product.stock <= 0}
@@ -142,7 +153,7 @@ export default function UserHomePage() {
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          
+
           <div className="text-sm font-medium">
             Page {currentPage} of {totalPages}
           </div>
@@ -157,7 +168,7 @@ export default function UserHomePage() {
           </Button>
         </div>
       )}
-      
+
       {filteredItems.length === 0 && (
         <div className="text-center py-20 text-muted-foreground italic">
           No items found in this category.
