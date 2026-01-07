@@ -102,10 +102,23 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: "Item ID is required" }, { status: 400 });
         }
 
+        // 1. ลบรายการจองที่เกี่ยวข้องก่อน (เพื่อไม่ให้ติด Foreign Key Constraint)
+        const { error: ordersError } = await supabase
+            .from('orders')
+            .delete()
+            .eq('item_id', id);
+
+        if (ordersError) {
+            console.error('Supabase delete orders error:', ordersError);
+            throw ordersError;
+        }
+
+        // 2. ลบตัวสินค้า
         const { error } = await supabase
             .from('items')
             .delete()
             .eq('id', id);
+
 
         if (error) {
             console.error('Supabase delete error:', error);
