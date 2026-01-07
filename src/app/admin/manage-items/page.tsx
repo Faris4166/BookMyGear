@@ -39,9 +39,15 @@ export default function ManageItemsPage() {
       setLoading(true)
       const res = await fetch('/api/items')
       const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to fetch items")
+      }
+
       setItems(Array.isArray(data) ? data : [])
-    } catch (e) {
-      console.error(e)
+    } catch (e: any) {
+      console.error('Fetch items error:', e)
+      alert("Error: " + (e.message || "Cannot load items"))
     } finally {
       setLoading(false)
     }

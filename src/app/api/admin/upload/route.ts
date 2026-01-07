@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
     try {
@@ -10,28 +9,32 @@ export async function POST(request: Request) {
         if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
 
         // ตรวจสอบขนาดไฟล์ (จำกัดที่ 3MB)
-        const MAX_SIZE = 3 * 1024 * 1024; // 3MB in bytes
+        const MAX_SIZE = 3 * 1024 * 1024;
         if (file.size > MAX_SIZE) {
             return NextResponse.json({ error: "File too large. Maximum size is 3MB." }, { status: 400 });
         }
 
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-
-        // กำหนดตำแหน่งเซฟไฟล์ (public/upload)
         const fileName = `${Date.now()}-${file.name}`;
-        const uploadDir = path.join(process.cwd(), 'public', 'upload');
-        const uploadPath = path.join(uploadDir, fileName);
+        const { data, error } = await supabase.storage
+            .from('images')
+            .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
 
-        // ตรวจสอบและสร้างโฟลเดอร์ถ้าไม่มี
-        await fs.mkdir(uploadDir, { recursive: true });
+        if (error) {
+            console.error('Supabase upload error:', error);
+            return NextResponse.json({ error: "Upload to Supabase failed: " + error.message }, { status: 500 });
+        }
 
-        await fs.writeFile(uploadPath, buffer);
+        // ดึง Public URL ของรูปภาพ
+        const { data: { publicUrl } } = supabase.storage
+            .from('images')
+            .getPublicUrl(fileName);
 
-        // คืนค่า path สำหรับเก็บใน JSON (เริ่มจาก /upload/...)
-        return NextResponse.json({ url: `/upload/${fileName}` });
-    } catch (error) {
-        return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+        return NextResponse.json({ url: publicUrl });
+    } catch (error: any) {
+        console.error('Upload catch error:', error);
+        return NextResponse.json({ error: error.message || "Upload failed" }, { status: 500 });
     }
 }
