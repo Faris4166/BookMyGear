@@ -1,22 +1,29 @@
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server"; // [เพิ่ม] เรียกใช้ currentUser
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Package, ShieldCheck, Zap } from "lucide-react"; // เพิ่ม Icon เพื่อความสวยงาม
+import { ChevronRight, Package, ShieldCheck, Zap } from "lucide-react";
 
-export default function LandingPage() {
+export default async function LandingPage() { // [แก้] เพิ่ม async
+  
+  // [เพิ่ม] ดึงข้อมูล User ปัจจุบันเพื่อเช็ค Role
+  const user = await currentUser();
+  // เช็คว่า metadata มี role เป็น 'admin' หรือไม่
+  const isAdmin = user?.publicMetadata?.role === 'admin';
+
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-background">
-      {/* Background Decoration - แสงฟุ้งๆ ด้านหลัง */}
+      {/* Background Decoration */}
       <div className="absolute top-0 -z-10 h-full w-full">
         <div className="absolute bottom-auto left-auto right-0 top-0 h-[500px] w-[500px] -translate-x-[30%] translate-y-[20%] rounded-full bg-primary/10 opacity-50 blur-[80px]"></div>
       </div>
 
       <main className="container z-10 flex flex-col items-center px-6 text-center">
-        {/* Badge ประชาสัมพันธ์เล็กๆ */}
+        {/* Badge */}
         <div className="mb-6 inline-flex items-center rounded-full border bg-muted/50 px-3 py-1 text-sm font-medium">
           <span className="text-primary">New</span>
           <span className="mx-2 h-4 w-[1px] bg-border"></span>
-          <span>เวอร์ชัน 1.0.10 เปิดใช้งานแล้ววันนี้</span>
+          <span>เวอร์ชัน 1.1.0 เปิดใช้งานแล้ววันนี้</span>
         </div>
 
         <h1 className="max-w-3xl text-5xl font-extrabold tracking-tight sm:text-6xl md:text-7xl">
@@ -29,7 +36,7 @@ export default function LandingPage() {
         </p>
 
         <div className="mt-10 flex flex-wrap justify-center gap-4">
-          {/* ถ้ายังไม่ได้ Login */}
+          {/* กรณีไม่ได้ Login */}
           <SignedOut>
             <SignInButton mode="modal">
               <Button size="lg" className="h-12 px-8 text-base font-semibold transition-all hover:scale-105">
@@ -41,10 +48,9 @@ export default function LandingPage() {
             </Button>
           </SignedOut>
 
-          {/* ถ้า Login แล้ว */}
+          {/* กรณี Login แล้ว */}
           <SignedIn>
             <div className="flex flex-col items-center gap-8">
-              {/* Profile Card แบบมินิมอล */}
               <div className="flex items-center gap-4 rounded-full border bg-card p-2 pr-6 shadow-sm">
                 <UserButton afterSignOutUrl="/" />
                 <div className="text-left">
@@ -57,15 +63,19 @@ export default function LandingPage() {
                 <Button asChild size="lg" className="h-12 px-8">
                   <Link href="/user/home">ไปที่หน้ายืมอุปกรณ์</Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="h-12 px-8">
-                  <Link href="/admin/manage-order">จัดการระบบ (Admin)</Link>
-                </Button>
+
+                {/* [แก้] แสดงปุ่ม Admin เฉพาะเมื่อ isAdmin เป็น true */}
+                {isAdmin && (
+                  <Button asChild variant="outline" size="lg" className="h-12 px-8">
+                    <Link href="/admin/manage-order">จัดการระบบ (Admin)</Link>
+                  </Button>
+                )}
               </div>
             </div>
           </SignedIn>
         </div>
 
-        {/* ส่วนแสดงจุดเด่น (Features) แบบสั้นๆ */}
+        {/* Features */}
         <div className="mt-20 grid grid-cols-1 gap-8 sm:grid-cols-3">
           <FeatureCard 
             icon={<Zap className="h-6 w-6 text-primary" />}
@@ -88,7 +98,6 @@ export default function LandingPage() {
   );
 }
 
-// Component ย่อยสำหรับ Feature
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
   return (
     <div className="flex flex-col items-center gap-2 p-4">

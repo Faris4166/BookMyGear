@@ -1,17 +1,25 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-
-export const dynamic = 'force-dynamic'; // เพิ่มบรรทัดนี้เพื่อให้อ่านไฟล์ใหม่ทุกครั้ง
+import { supabase } from '@/lib/supabase';
+import { auth } from '@clerk/nextjs/server';
 
 export async function GET() {
-    try {
-        const filePath = path.join(process.cwd(), 'data', 'order.json');
-        const fileContent = await fs.readFile(filePath, 'utf8');
-        const data = JSON.parse(fileContent);
-        // แนะนำให้ reverse ข้อมูลเพื่อให้รายการจองใหม่ล่าสุดอยู่ด้านบน
-        return NextResponse.json(Array.isArray(data) ? data.reverse() : []);
-    } catch (error) {
-        return NextResponse.json([]);
-    }
+    const { userId } = await auth();
+    // ควรเช็ค Role ว่าเป็น Admin ไหม แต่ตอนนี้เช็คแค่ Login ก่อน
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    // ดึงข้อมูล Orders พร้อม Join กับ Items เพื่อเอาชื่อสินค้าและรูป
+    const { data, error } = await supabase
+        .from('orders')
+        .select(`
+            *,
+            items (
+                name,
+                img
+            )
+        `)
+        .order('created_at', { ascending: false });
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    
+    return NextResponse.json(data);
 }

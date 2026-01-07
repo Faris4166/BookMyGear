@@ -1,51 +1,62 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { supabase } from '@/lib/supabase';
+import { auth } from '@clerk/nextjs/server';
 
-const filePath = path.join(process.cwd(), 'data', 'items.json');
-
-// ดึงข้อมูลสินค้าทั้งหมด
+// GET: ดึงสินค้าทั้งหมด
 export async function GET() {
-    try {
-        const fileContent = await fs.readFile(filePath, 'utf8');
-        return NextResponse.json(JSON.parse(fileContent));
-    } catch (error) {
-        return NextResponse.json({ error: "Load failed" }, { status: 500 });
-    }
+    const { data, error } = await supabase
+        .from('items')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data);
 }
 
-// เพิ่มสินค้าใหม่
+// POST: เพิ่มสินค้า (เฉพาะคน Login)
 export async function POST(request: Request) {
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     try {
-        const newItem = await request.json();
-        const fileContent = await fs.readFile(filePath, 'utf8');
-        const items = JSON.parse(fileContent);
+        const body = await request.json();
+        const { data, error } = await supabase
+            .from('items')
+            .insert([{
+                name: body.name,
+                img: body.img || '',
+                stock: Number(body.stock),
+                description: body.description || '',
+                category: body.category,
+                role: body.role || 'user'
+            }])
+            .select();
 
-        const itemWithId = { ...newItem, id: Date.now().toString() };
-        items.push(itemWithId);
-
-        await fs.writeFile(filePath, JSON.stringify(items, null, 2));
-        return NextResponse.json(itemWithId, { status: 201 });
-    } catch (error) {
-        return NextResponse.json({ error: 'Failed to add item' }, { status: 500 });
+        if (error) throw error;
+        return NextResponse.json(data[0], { status: 201 });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
 
-// แก้ไขสินค้าเดิม
+// PATCH: แก้ไขสินค้า
 export async function PATCH(request: Request) {
-    try {
-        const updatedItem = await request.json();
-        const fileContent = await fs.readFile(filePath, 'utf8');
-        let items = JSON.parse(fileContent);
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const index = items.findIndex((item: any) => item.id === updatedItem.id);
-        if (index !== -1) {
-            items[index] = { ...items[index], ...updatedItem };
-            await fs.writeFile(filePath, JSON.stringify(items, null, 2));
-            return NextResponse.json(items[index]);
-        }
-        return NextResponse.json({ error: 'Item not found' }, { status: 404 });
-    } catch (error) {
-        return NextResponse.json({ error: 'Failed to update item' }, { status: 500 });
+    try {
+        const body = await request.json();
+        const { id, ...updates } = body;
+
+        const { data, error } = await supabase
+            .from('items')
+            .update(updates)
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+        return NextResponse.json(data[0]);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
