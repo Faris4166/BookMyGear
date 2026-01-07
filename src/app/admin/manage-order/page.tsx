@@ -18,13 +18,33 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Loader2, CheckCircle, XCircle, RefreshCcw, LayoutDashboard } from "lucide-react"
+import { Loader2, CheckCircle, XCircle, RefreshCcw, LayoutDashboard, CheckCircle2, AlertCircle } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 
 export default function ManageOrderPage() {
   const { user } = useUser(); // ข้อมูลผู้ใช้ที่ล็อกอิน
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
+
+  // State สำหรับ Popup
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogStatus, setDialogStatus] = useState<{ title: string, desc: string, type: 'success' | 'error' }>({
+    title: "", desc: "", type: 'success'
+  })
+
+  const showPopup = (title: string, desc: string, type: 'success' | 'error') => {
+    setDialogStatus({ title, desc, type })
+    setDialogOpen(true)
+  }
+
 
   const fetchOrders = async () => {
     try {
@@ -56,11 +76,12 @@ export default function ManageOrderPage() {
 
       if (res.ok) {
         fetchOrders()
+        showPopup("ดำเนินการสำเร็จ", `รายการไอดี ${orderId.substring(0, 8)}... ได้รับการ ${newStatus === 'Approved' ? 'อนุมัติ' : 'ปฏิเสธ'} แล้ว`, "success")
       } else {
-        alert(data.error || "ไม่สามารถดำเนินการได้")
+        showPopup("ไม่สามารถดำเนินการได้", data.error || "เกิดข้อผิดพลาดบางประการ", "error")
       }
     } catch (e) {
-      alert("เกิดข้อผิดพลาดในการเชื่อมต่อ")
+      showPopup("เกิดข้อผิดพลาด", "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้", "error")
     } finally {
       setProcessingIds(prev => {
         const next = new Set(prev)
@@ -181,6 +202,28 @@ export default function ManageOrderPage() {
           </Table>
         </CardContent>
       </Card>
+      {/* --- Shadcn UI Dialog (แทนที่ Window Alert) --- */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader className="flex flex-col items-center gap-2 pt-4">
+            {dialogStatus.type === 'success' ? (
+              <CheckCircle2 className="h-12 w-12 text-green-500" />
+            ) : (
+              <AlertCircle className="h-12 w-12 text-destructive" />
+            )}
+            <DialogTitle className="text-xl text-center">{dialogStatus.title}</DialogTitle>
+            <DialogDescription className="text-center">{dialogStatus.desc}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button
+              className="w-full"
+              onClick={() => setDialogOpen(false)}
+            >
+              รับทราบ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

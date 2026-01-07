@@ -6,7 +6,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   Table,
   TableBody,
@@ -22,7 +32,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Loader2, Plus, Edit2, RefreshCcw, ImagePlus, Package2, Tag, Hash, FileText, Trash2 } from "lucide-react"
+import { Loader2, Plus, Edit2, RefreshCcw, ImagePlus, Package2, Tag, Hash, FileText, Trash2, CheckCircle2, AlertCircle } from "lucide-react"
 import Image from 'next/image'
 
 export default function ManageItemsPage() {
@@ -33,6 +43,22 @@ export default function ManageItemsPage() {
   const [editingItem, setEditingItem] = useState<any>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState("")
+
+  // State สำหรับ Popup แจ้งเตือนทั่วไป
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [dialogStatus, setDialogStatus] = useState<{ title: string, desc: string, type: 'success' | 'error' }>({
+    title: "", desc: "", type: 'success'
+  })
+
+  // State สำหรับการยืนยันการลบ
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<{ id: string, name: string } | null>(null)
+
+  const showPopup = (title: string, desc: string, type: 'success' | 'error') => {
+    setDialogStatus({ title, desc, type })
+    setDialogOpen(true)
+  }
+
 
   const fetchItems = async () => {
     try {
@@ -49,7 +75,7 @@ export default function ManageItemsPage() {
       setItems(Array.isArray(data) ? data : [])
     } catch (e: any) {
       console.error('Fetch items error detail:', e)
-      alert("Error: " + (e.message || "Cannot load items"))
+      showPopup("โหลดข้อมูลไม่สำเร็จ", e.message || "ไม่สามารถดึงข้อมูลสินค้าได้", "error")
     } finally {
       setLoading(false)
     }
@@ -81,10 +107,14 @@ export default function ManageItemsPage() {
         setIsDialogOpen(false)
         setEditingItem(null)
         setPreviewUrl("")
+        showPopup("บันทึกสำเร็จ", `บันทึกรายการ "${itemData.name}" เรียบร้อยแล้ว`, "success")
         fetchItems()
+      } else {
+        const err = await res.json();
+        showPopup("บันทึกไม่สำเร็จ", err.error || "ไม่สามารถบันทึกข้อมูลได้", "error")
       }
     } catch (e) {
-      alert("Error saving item")
+      showPopup("เกิดข้อผิดพลาด", "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ในการบันทึก", "error")
     }
   }
 
@@ -116,28 +146,32 @@ export default function ManageItemsPage() {
       setPreviewUrl(data.url)
     } catch (e: any) {
       console.error('Upload error detail:', e);
-      alert(e.message || "เกิดข้อผิดพลาดในการอัปโหลด")
+      showPopup("อัปโหลดไม่สำเร็จ", e.message || "เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ", "error")
     } finally {
       setIsUploading(false)
     }
   }
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) return
+  const handleDelete = async () => {
+    if (!itemToDelete) return
 
     try {
-      const res = await fetch(`/api/items?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/items?id=${itemToDelete.id}`, { method: 'DELETE' })
       if (res.ok) {
-        alert("Item deleted successfully")
+        showPopup("ลบสำเร็จ", `ลบรายการ "${itemToDelete.name}" ออกจากระบบแล้ว`, "success")
         fetchItems()
       } else {
         const data = await res.json()
-        alert("Delete failed: " + data.error)
+        showPopup("ลบไม่สำเร็จ", data.error || "เกิดข้อผิดพลาดในการลบ", "error")
       }
     } catch (e) {
-      alert("Error deleting item")
+      showPopup("เกิดข้อผิดพลาด", "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ในการลบ", "error")
+    } finally {
+      setDeleteConfirmOpen(false)
+      setItemToDelete(null)
     }
   }
+
 
 
   if (loading) return (
@@ -322,7 +356,10 @@ export default function ManageItemsPage() {
                         variant="ghost"
                         size="sm"
                         className="rounded-xl active:scale-95 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDelete(item.id, item.name)}
+                        onClick={() => {
+                          setItemToDelete({ id: item.id, name: item.name });
+                          setDeleteConfirmOpen(true);
+                        }}
                       >
                         <Trash2 className="w-4 h-4 mr-2" /> Delete
                       </Button>
@@ -344,6 +381,47 @@ export default function ManageItemsPage() {
           </Table>
         </CardContent>
       </Card>
+      {/* --- Shadcn UI Dialog (แทนที่ Window Alert) --- */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader className="flex flex-col items-center gap-2 pt-4">
+            {dialogStatus.type === 'success' ? (
+              <CheckCircle2 className="h-12 w-12 text-green-500" />
+            ) : (
+              <AlertCircle className="h-12 w-12 text-destructive" />
+            )}
+            <DialogTitle className="text-xl text-center">{dialogStatus.title}</DialogTitle>
+            <DialogDescription className="text-center">{dialogStatus.desc}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button
+              className="w-full"
+              onClick={() => setDialogOpen(false)}
+            >
+              รับทราบ
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- Alert Dialog สำหรับยืนยันการลบ --- */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการลบข้อมูล?</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณแน่ใจว่าต้องการลบรายการ "{itemToDelete?.name}" หรือไม่?
+              การดำเนินการนี้จะลบข้อมูลออกจากระบบถาวรและไม่สามารถกู้คืนได้
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              ยืนยันการลบ
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
