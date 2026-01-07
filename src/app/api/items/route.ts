@@ -4,22 +4,25 @@ import { auth } from '@clerk/nextjs/server';
 
 // GET: ดึงสินค้าทั้งหมด
 export async function GET() {
-    console.log('--- GET /api/items ---');
+    console.log('--- GET /api/items starting ---');
     try {
+        console.log('Connecting to Supabase at:', process.env.NEXT_PUBLIC_SUPABASE_URL);
         const { data, error } = await supabase
             .from('items')
-            .select('*')
-            .order('created_at', { ascending: false });
+            .select('*');
 
         if (error) {
-            console.error('Supabase fetch error:', error);
+            console.error('Supabase error in GET /api/items:', error);
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
         
-        console.log(`Found ${data?.length || 0} items`);
+        console.log('GET /api/items success, count:', data?.length);
+        if (data && data.length > 0) {
+            console.log('First item sample:', JSON.stringify(data[0]).substring(0, 100));
+        }
         return NextResponse.json(data);
     } catch (err: any) {
-        console.error('API Error:', err);
+        console.error('Catch error in GET /api/items:', err);
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
