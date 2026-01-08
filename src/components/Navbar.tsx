@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 // 1. เพิ่ม useUser เข้ามาใน import
 import { UserButton, SignedIn, useUser } from "@clerk/nextjs"
@@ -59,7 +60,7 @@ export function Navbar() {
         <div className="flex items-center gap-10">
           <Link href={isAdminPath ? "/admin/manage-items" : "/user/home"} className="flex items-center space-x-2 group">
             <div className="p-2 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
-              <Package2 className="h-6 w-6 text-primary" />
+              <Image src="/BookMyGear.svg" alt="BookMyGear" width={30} height={30} className="h-6 w-6 text-primary" />
             </div>
             <span className="font-extrabold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
               BookMyGear

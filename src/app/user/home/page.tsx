@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from '@/components/ui/button';
 import { Separator } from "@/components/ui/separator";
-import { Package2, UserCircle, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { Package2, UserCircle, ChevronLeft, ChevronRight, Filter, Search } from "lucide-react";
+import { Input } from "@/components/ui/input"
 import { useUser } from "@clerk/nextjs";
 import { useMemo, useCallback } from 'react';
 import {
@@ -24,6 +25,7 @@ export default function UserHomePage() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 8; // จำนวนสินค้าต่อหน้า
 
   useEffect(() => {
@@ -48,14 +50,18 @@ export default function UserHomePage() {
   const categories = useMemo(() => ["All", ...new Set(items.map((item: any) => item.category))], [items]);
 
   const filteredItems = useMemo(() => {
-    if (selectedCategory === "All") return items;
-    return items.filter((item) => item.category === selectedCategory);
-  }, [selectedCategory, items]);
+    return items.filter((item) => {
+      const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [selectedCategory, searchQuery, items]);
 
-  // Optimization: Reset page when category changes to avoid empty views
+  // Optimization: Reset page when category or search query changes to avoid empty views
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory]);
+  }, [selectedCategory, searchQuery]);
 
 
 
@@ -80,24 +86,36 @@ export default function UserHomePage() {
 
       <Separator />
 
-      {/* --- Category Filter Section --- */}
-      <div className="flex items-center gap-4 pb-2">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Filter className="w-4 h-4" />
-          <span className="text-sm font-medium">Filter by Category:</span>
+      {/* --- Search & Category Filter Section --- */}
+      <div className="flex flex-col md:flex-row items-center gap-4 pb-2">
+        <div className="relative w-full md:max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search items..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 rounded-full bg-card shadow-sm focus-visible:ring-primary"
+          />
         </div>
-        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger className="w-[180px] rounded-full">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="hidden sm:flex items-center gap-2 text-muted-foreground">
+            <Filter className="w-4 h-4" />
+            <span className="text-sm font-medium">Category:</span>
+          </div>
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-full md:w-[180px] rounded-full bg-card shadow-sm">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* --- Grid Section --- */}
