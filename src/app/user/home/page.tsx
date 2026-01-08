@@ -6,9 +6,10 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from '@/components/ui/button';
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton"; // นำเข้า Skeleton
-import { Package2, UserCircle, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Package2, UserCircle, ChevronLeft, ChevronRight, Filter, Search } from "lucide-react"; // เพิ่ม Search Icon
 import { useUser } from "@clerk/nextjs";
+import { Input } from "@/components/ui/input"; // นำเข้า Input
 import {
   Select,
   SelectContent,
@@ -40,28 +41,25 @@ function ItemSkeleton() {
 export default function UserHomePage() {
   const { user } = useUser();
   const [items, setItems] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true); // เพิ่ม State สำหรับการโหลด
+  const [isLoading, setIsLoading] = useState(true);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState(""); // 1. เพิ่ม State สำหรับการค้นหา
   const itemsPerPage = 8;
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true); // เริ่มต้นโหลด
+      setIsLoading(true);
       try {
         const res = await fetch('/api/items');
         const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || "Failed to fetch items");
-        }
-
+        if (!res.ok) throw new Error(data.error || "Failed to fetch items");
         setItems(Array.isArray(data) ? data : []);
       } catch (err: any) {
         console.error('User Home fetch error:', err);
       } finally {
-        setIsLoading(false); // โหลดเสร็จสิ้น (ไม่ว่าจะสำเร็จหรือไม่)
+        setIsLoading(false);
       }
     };
     fetchData();
@@ -69,14 +67,19 @@ export default function UserHomePage() {
 
   const categories = useMemo(() => ["All", ...new Set(items.map((item: any) => item.category))], [items]);
 
+  // 2. ปรับ Logic การ Filter ให้รวม Search Query
   const filteredItems = useMemo(() => {
-    if (selectedCategory === "All") return items;
-    return items.filter((item) => item.category === selectedCategory);
-  }, [selectedCategory, items]);
+    return items.filter((item) => {
+      const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [selectedCategory, searchQuery, items]);
 
+  // Reset หน้าไปที่ 1 เมื่อมีการค้นหาหรือเปลี่ยนหมวดหมู่
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory]);
+  }, [selectedCategory, searchQuery]);
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -98,35 +101,48 @@ export default function UserHomePage() {
 
       <Separator />
 
-      {/* Category Filter */}
-      <div className="flex items-center gap-4 pb-2">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Filter className="w-4 h-4" />
-          <span className="text-sm font-medium">Filter by Category:</span>
+      {/* Search & Filter Bar */}
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+        {/* Search Input */}
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search equipment name..."
+            className="pl-10 rounded-full"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            disabled={isLoading}
+          />
         </div>
-        <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isLoading}>
-          <SelectTrigger className="w-[180px] rounded-full">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
+        {/* Category Filter */}
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="flex items-center gap-2 text-muted-foreground whitespace-nowrap">
+            <Filter className="w-4 h-4" />
+            <span className="text-sm font-medium">Category:</span>
+          </div>
+          <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isLoading}>
+            <SelectTrigger className="w-[180px] rounded-full">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* --- Grid Section --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {isLoading ? (
-          // แสดง Skeleton จำนวน 8 อันตาม itemsPerPage ขณะรอโหลด
           Array.from({ length: itemsPerPage }).map((_, index) => (
             <ItemSkeleton key={index} />
           ))
         ) : (
-          // แสดงข้อมูลจริง
           currentItems.map((product) => (
             <Card key={product.id} className="group border-none shadow-md hover:shadow-xl transition-all duration-300 flex flex-col bg-card">
               <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-xl">
@@ -182,7 +198,7 @@ export default function UserHomePage() {
         )}
       </div>
 
-      {/* Pagination (ซ่อนไว้ถ้ากำลังโหลด) */}
+      {/* Pagination */}
       {!isLoading && totalPages > 1 && (
         <div className="flex justify-center items-center gap-4 pt-8">
           <Button
@@ -211,7 +227,7 @@ export default function UserHomePage() {
 
       {!isLoading && filteredItems.length === 0 && (
         <div className="text-center py-20 text-muted-foreground italic">
-          No items found in this category.
+          No items found matching your search.
         </div>
       )}
     </div>

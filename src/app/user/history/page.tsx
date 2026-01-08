@@ -1,93 +1,205 @@
-import React from 'react'
+"use client"
+
+import React, { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { ArrowRight, CalendarArrowDown, CalendarArrowUp, Info } from 'lucide-react';
+import { 
+  ArrowRight, 
+  CalendarArrowDown, 
+  CalendarArrowUp, 
+  Info, 
+  Search, 
+  Filter, 
+  Loader2 
+} from 'lucide-react';
+import { useUser } from "@clerk/nextjs";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-import { currentUser } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+export default function HistoryUser() {
+  const { user, isLoaded } = useUser();
+  const [orders, setOrders] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // State สำหรับ Search และ Filter
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-export default async function HistoryUser() {
-  const user = await currentUser();
-  if (!user) redirect('/sign-in');
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!isLoaded || !user) return;
+      
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            items (
+              name,
+              img,
+              description
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-  let orders = [];
-  try {
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`
-        *,
-        items (
-          name,
-          img,
-          description
-        )
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+        if (error) throw error;
 
-    if (error) throw error;
+        const formattedData = data.map((order: any) => ({
+          ...order,
+          name: order.items?.name,
+          img: order.items?.img,
+          description: order.items?.description,
+          datastart: order.start_date,
+          dataend: order.end_date,
+          role: order.status === 'approved' ? 'ได้รับอนุญาตแล้ว' :
+                order.status === 'rejected' ? 'ไม่ได้รับอนุญาต' :
+                order.status === 'pending' ? 'รอการอนุญาต' : order.status
+        }));
+        setOrders(formattedData);
+      } catch (e) {
+        console.error('Fetch orders error:', e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    // Map data to match existing UI structure if needed
-    orders = data.map((order: any) => ({
-      ...order,
-      name: order.items?.name,
-      img: order.items?.img,
-      description: order.items?.description,
-      datastart: order.start_date,
-      dataend: order.end_date,
-      role: order.status === 'approved' ? 'ได้รับอนุญาตแล้ว' :
-        order.status === 'rejected' ? 'ไม่ได้รับอนุญาต' :
-          order.status === 'pending' ? 'รอการอนุญาต' : order.status
-    }));
-  } catch (e) {
-    console.error('Fetch orders error:', e);
-    orders = [];
+    fetchOrders();
+  }, [user, isLoaded]);
+
+  // Logic สำหรับการค้นหาและกรองข้อมูล
+  const filteredOrders = useMemo(() => {
+    return orders.filter((item) => {
+      const matchesSearch = item.name?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === "all" || item.status?.toLowerCase() === statusFilter.toLowerCase();
+      return matchesSearch && matchesStatus;
+    });
+  }, [searchQuery, statusFilter, orders]);
+
+  if (!isLoaded || isLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">History</h1>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-3xl font-bold tracking-tight">History</h1>
+        <p className="text-muted-foreground text-sm">ตรวจสอบและค้นหาประวัติการทำรายการของคุณ</p>
+      </div>
+
+      {/* Search & Filter Section */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="relative flex-grow">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="ค้นหาชื่ออุปกรณ์..."
+            className="pl-10 rounded-lg"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full md:w-[180px] rounded-lg">
+              <SelectValue placeholder="สถานะทั้งหมด" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">สถานะทั้งหมด</SelectItem>
+              <SelectItem value="pending">รอการอนุญาต</SelectItem>
+              <SelectItem value="approved">ได้รับอนุญาตแล้ว</SelectItem>
+              <SelectItem value="rejected">ไม่ได้รับอนุญาต</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Content Section */}
       <div className="space-y-4">
-        {orders.length === 0 ? <p className="text-center text-muted-foreground">ไม่มีประวัติ</p> : (
+        {filteredOrders.length === 0 ? (
+          <div className="text-center py-20 border-2 border-dashed rounded-2xl bg-muted/30">
+            <p className="text-muted-foreground">ไม่พบประวัติการทำรายการที่คุณค้นหา</p>
+          </div>
+        ) : (
           <Accordion type="single" collapsible className="w-full space-y-3">
-            {orders.map((item: any, index: number) => (
-              <AccordionItem key={index} value={`item-${index}`} className="border rounded-xl px-4 bg-card">
-                <AccordionTrigger className="py-6">
+            {filteredOrders.map((item: any, index: number) => (
+              <AccordionItem 
+                key={index} 
+                value={`item-${index}`} 
+                className="border rounded-xl px-4 bg-card shadow-sm hover:shadow-md transition-shadow duration-200"
+              >
+                <AccordionTrigger className="py-6 hover:no-underline">
                   <div className="flex items-center gap-4 text-left">
-                    <div className="w-12 h-12 rounded-lg bg-secondary overflow-hidden">
-                      <Image src={item.img} alt={item.name} width={50} height={50} className="object-cover w-full h-full" />
+                    <div className="w-14 h-14 rounded-lg bg-secondary overflow-hidden flex-shrink-0 relative">
+                      <Image 
+                        src={item.img} 
+                        alt={item.name} 
+                        fill
+                        className="object-cover" 
+                      />
                     </div>
                     <div>
-                      <p className="font-bold text-lg mb-2">{item.name}</p>
+                      <p className="font-bold text-lg mb-1 leading-tight">{item.name}</p>
                       <Badge
                         variant={
-                          item.status === 'Approved' ? 'secondary' :
-                            item.status === 'Rejected' ? 'destructive' :
-                              'outline'
+                          item.status === 'approved' ? 'secondary' :
+                          item.status === 'rejected' ? 'destructive' :
+                          'outline'
                         }
+                        className="font-medium"
                       >
                         {
-                          item.status === 'Pending' ? 'รอการอนุญาต' :
-                            item.status === 'Approved' ? 'ได้รับอนุญาตแล้ว' :
-                              item.status === 'Rejected' ? 'ไม่ได้รับอนุญาต' :
-                                item.status
+                          item.status === 'pending' ? 'รอการอนุญาต' :
+                          item.status === 'approved' ? 'ได้รับอนุญาตแล้ว' :
+                          item.status === 'rejected' ? 'ไม่ได้รับอนุญาต' :
+                          item.status
                         }
                       </Badge>
                     </div>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="pb-6 pt-2">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <AccordionContent className="pb-6 pt-2 border-t mt-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                     <div className="space-y-4">
-                      <div><h4 className="text-sm font-semibold flex items-center gap-2"><Info className="w-4 h-4" /> Description</h4><p className="text-sm text-muted-foreground">{item.description}</p></div>
-                      <div className="p-3 bg-muted rounded-lg"><p className="italic text-sm">{item.role}</p></div>
+                      <div>
+                        <h4 className="text-sm font-semibold flex items-center gap-2 mb-1">
+                          <Info className="w-4 h-4" /> Description
+                        </h4>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {item.description || "ไม่มีคำอธิบายอุปกรณ์"}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-muted rounded-lg border">
+                        <p className="italic text-sm text-primary font-medium">
+                          หมายเหตุ: {item.role}
+                        </p>
+                      </div>
                     </div>
-                    <div className="bg-secondary/30 p-4 rounded-2xl border border-dashed flex items-center justify-around">
-                      <div className="text-center"><CalendarArrowDown className="mx-auto mb-2 text-primary" /><p className="text-xs uppercase">Start</p><p className="font-bold">{item.datastart}</p></div>
-                      <ArrowRight className="text-muted-foreground/50" />
-                      <div className="text-center"><CalendarArrowUp className="mx-auto mb-2 text-primary" /><p className="text-xs uppercase">Return</p><p className="font-bold">{item.dataend}</p></div>
+                    <div className="bg-secondary/20 p-4 rounded-2xl border border-dashed flex items-center justify-around">
+                      <div className="text-center">
+                        <CalendarArrowDown className="mx-auto mb-2 text-primary w-5 h-5" />
+                        <p className="text-[10px] uppercase text-muted-foreground font-extrabold tracking-wider">Start Date</p>
+                        <p className="font-bold text-sm">{item.datastart}</p>
+                      </div>
+                      <ArrowRight className="text-muted-foreground/30 w-5 h-5" />
+                      <div className="text-center">
+                        <CalendarArrowUp className="mx-auto mb-2 text-primary w-5 h-5" />
+                        <p className="text-[10px] uppercase text-muted-foreground font-extrabold tracking-wider">Return Date</p>
+                        <p className="font-bold text-sm">{item.dataend}</p>
+                      </div>
                     </div>
                   </div>
                 </AccordionContent>
