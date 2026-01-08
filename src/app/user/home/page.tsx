@@ -1,15 +1,14 @@
 "use client"
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from '@/components/ui/button';
 import { Separator } from "@/components/ui/separator";
-import { Package2, UserCircle, ChevronLeft, ChevronRight, Filter, Search } from "lucide-react";
-import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"; // นำเข้า Skeleton
+import { Package2, UserCircle, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
-import { useMemo, useCallback } from 'react';
 import {
   Select,
   SelectContent,
@@ -18,18 +17,38 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+// --- Component สำหรับแสดงผลตอนโหลด (Skeleton Card) ---
+function ItemSkeleton() {
+  return (
+    <Card className="border-none shadow-md flex flex-col bg-card">
+      <Skeleton className="aspect-[16/10] w-full rounded-t-xl" />
+      <CardHeader className="space-y-2 pb-3">
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
+      </CardHeader>
+      <CardContent className="flex-grow pb-4">
+        <Skeleton className="h-4 w-1/2" />
+      </CardContent>
+      <CardFooter className="pt-0 pb-6 px-6">
+        <Skeleton className="h-10 w-full rounded-md" />
+      </CardFooter>
+    </Card>
+  )
+}
 
 export default function UserHomePage() {
   const { user } = useUser();
   const [items, setItems] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true); // เพิ่ม State สำหรับการโหลด
 
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
-  const itemsPerPage = 8; // จำนวนสินค้าต่อหน้า
+  const itemsPerPage = 8;
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true); // เริ่มต้นโหลด
       try {
         const res = await fetch('/api/items');
         const data = await res.json();
@@ -41,31 +60,24 @@ export default function UserHomePage() {
         setItems(Array.isArray(data) ? data : []);
       } catch (err: any) {
         console.error('User Home fetch error:', err);
+      } finally {
+        setIsLoading(false); // โหลดเสร็จสิ้น (ไม่ว่าจะสำเร็จหรือไม่)
       }
     };
     fetchData();
   }, []);
 
-  // Optimization: Memoize categories to prevent recalculating on every render
   const categories = useMemo(() => ["All", ...new Set(items.map((item: any) => item.category))], [items]);
 
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      const matchesCategory = selectedCategory === "All" || item.category === selectedCategory;
-      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-  }, [selectedCategory, searchQuery, items]);
+    if (selectedCategory === "All") return items;
+    return items.filter((item) => item.category === selectedCategory);
+  }, [selectedCategory, items]);
 
-  // Optimization: Reset page when category or search query changes to avoid empty views
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory]);
 
-
-
-  // ระบบแบ่งหน้า (Pagination Logic)
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
@@ -73,7 +85,7 @@ export default function UserHomePage() {
 
   return (
     <div className="max-w-7xl mx-auto p-6 md:p-8 space-y-8">
-      {/* --- Header Section --- */}
+      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-4xl font-bold tracking-tight">Equipment Home</h1>
@@ -86,96 +98,92 @@ export default function UserHomePage() {
 
       <Separator />
 
-      {/* --- Search & Category Filter Section --- */}
-      <div className="flex flex-col md:flex-row items-center gap-4 pb-2">
-        <div className="relative w-full md:max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search items..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 rounded-full bg-card shadow-sm focus-visible:ring-primary"
-          />
+      {/* Category Filter */}
+      <div className="flex items-center gap-4 pb-2">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Filter className="w-4 h-4" />
+          <span className="text-sm font-medium">Filter by Category:</span>
         </div>
-
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <div className="hidden sm:flex items-center gap-2 text-muted-foreground">
-            <Filter className="w-4 h-4" />
-            <span className="text-sm font-medium">Category:</span>
-          </div>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-full md:w-[180px] rounded-full bg-card shadow-sm">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isLoading}>
+          <SelectTrigger className="w-[180px] rounded-full">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((cat) => (
+              <SelectItem key={cat} value={cat}>
+                {cat}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* --- Grid Section --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {currentItems.map((product) => (
-          <Card key={product.id} className="group border-none shadow-md hover:shadow-xl transition-all duration-300 flex flex-col bg-card">
-            <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-xl">
-              <Image
-                src={product.img}
-                alt={product.name}
-                fill
-                className="object-cover group-hover:scale-110 transition-transform duration-500"
-                priority={indexOfFirstItem + currentItems.indexOf(product) < 4}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-              />
-              <div className="absolute top-2 right-2">
-                <Badge className="backdrop-blur-md bg-white/70 text-black border-none">
-                  {product.category}
-                </Badge>
+        {isLoading ? (
+          // แสดง Skeleton จำนวน 8 อันตาม itemsPerPage ขณะรอโหลด
+          Array.from({ length: itemsPerPage }).map((_, index) => (
+            <ItemSkeleton key={index} />
+          ))
+        ) : (
+          // แสดงข้อมูลจริง
+          currentItems.map((product) => (
+            <Card key={product.id} className="group border-none shadow-md hover:shadow-xl transition-all duration-300 flex flex-col bg-card">
+              <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-xl">
+                <Image
+                  src={product.img}
+                  alt={product.name}
+                  fill
+                  className="object-cover group-hover:scale-110 transition-transform duration-500"
+                  priority={indexOfFirstItem + currentItems.indexOf(product) < 4}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                />
+                <div className="absolute top-2 right-2">
+                  <Badge className="backdrop-blur-md bg-white/70 text-black border-none">
+                    {product.category}
+                  </Badge>
+                </div>
               </div>
-            </div>
 
-            <CardHeader className="space-y-2 pb-3">
-              <Link href={`/user/home/${product.id}`}>
-                <CardTitle className="text-lg font-bold leading-tight line-clamp-1">{product.name}</CardTitle>
-              </Link>
-              <CardDescription className="line-clamp-2 text-sm leading-relaxed min-h-[40px]">
-                {product.description}
-              </CardDescription>
-            </CardHeader>
+              <CardHeader className="space-y-2 pb-3">
+                <Link href={`/user/home/${product.id}`}>
+                  <CardTitle className="text-lg font-bold leading-tight line-clamp-1">{product.name}</CardTitle>
+                </Link>
+                <CardDescription className="line-clamp-2 text-sm leading-relaxed min-h-[40px]">
+                  {product.description}
+                </CardDescription>
+              </CardHeader>
 
-            <CardContent className="flex-grow pb-4">
-              <div className="flex items-center gap-2 text-sm">
-                <Package2 className="w-4 h-4 text-muted-foreground" />
-                <span className={product.stock > 0 ? "text-foreground" : "text-destructive font-medium"}>
-                  {product.stock > 0 ? `${product.stock} items available` : "Out of stock"}
-                </span>
-              </div>
-            </CardContent>
+              <CardContent className="flex-grow pb-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <Package2 className="w-4 h-4 text-muted-foreground" />
+                  <span className={product.stock > 0 ? "text-foreground" : "text-destructive font-medium"}>
+                    {product.stock > 0 ? `${product.stock} items available` : "Out of stock"}
+                  </span>
+                </div>
+              </CardContent>
 
-            <CardFooter className="pt-0 pb-6 px-6">
-              <Button
-                asChild={product.stock > 0}
-                className="w-full font-semibold"
-                variant={product.stock > 0 ? "default" : "secondary"}
-                disabled={product.stock <= 0}
-              >
-                {product.stock > 0 ? (
-                  <Link href={`/user/home/${product.id}`}>Book This Item</Link>
-                ) : (
-                  <span>Unavailable</span>
-                )}
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+              <CardFooter className="pt-0 pb-6 px-6">
+                <Button
+                  asChild={product.stock > 0}
+                  className="w-full font-semibold"
+                  variant={product.stock > 0 ? "default" : "secondary"}
+                  disabled={product.stock <= 0}
+                >
+                  {product.stock > 0 ? (
+                    <Link href={`/user/home/${product.id}`}>Book This Item</Link>
+                  ) : (
+                    <span>Unavailable</span>
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          ))
+        )}
       </div>
 
-      {/* --- Pagination Controls --- */}
-      {totalPages > 1 && (
+      {/* Pagination (ซ่อนไว้ถ้ากำลังโหลด) */}
+      {!isLoading && totalPages > 1 && (
         <div className="flex justify-center items-center gap-4 pt-8">
           <Button
             variant="outline"
@@ -201,7 +209,7 @@ export default function UserHomePage() {
         </div>
       )}
 
-      {filteredItems.length === 0 && (
+      {!isLoading && filteredItems.length === 0 && (
         <div className="text-center py-20 text-muted-foreground italic">
           No items found in this category.
         </div>
