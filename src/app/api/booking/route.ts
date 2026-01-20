@@ -35,6 +35,11 @@ export async function POST(request: Request) {
 
         // 3. (Optional) ตัดสต็อกสินค้าทันที หรือจะไปตัดตอนอนุมัติก็ได้
         // ตรงนี้ขอเว้นไว้ก่อน เพื่อความง่ายในการจัดการ
+        
+        const { revalidateTag, revalidatePath } = await import('next/cache');
+        revalidateTag('orders', 'default');
+        revalidateTag(`orders-${user.id}`, 'default');
+        revalidatePath('/user/history');
 
         return NextResponse.json(data[0], { status: 201 });
 

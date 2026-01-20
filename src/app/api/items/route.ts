@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { auth } from '@clerk/nextjs/server';
+import { revalidateTag, revalidatePath } from 'next/cache';
 
 // GET: ดึงสินค้าทั้งหมด
 export async function GET() {
@@ -48,6 +49,9 @@ export async function POST(request: Request) {
             console.error('Supabase insert error:', error);
             throw error;
         }
+        
+        revalidateTag('items', 'default');
+        revalidatePath('/user/home');
         return NextResponse.json(data[0], { status: 201 });
     } catch (error: any) {
         console.error('Catch error:', error);
@@ -76,6 +80,9 @@ export async function PATCH(request: Request) {
             console.error('Supabase update error:', error);
             throw error;
         }
+        
+        revalidateTag('items', 'default');
+        revalidatePath('/user/home');
         return NextResponse.json(data[0]);
     } catch (error: any) {
         console.error('Catch error:', error);
@@ -120,6 +127,8 @@ export async function DELETE(request: Request) {
             throw error;
         }
 
+        revalidateTag('items', 'default');
+        revalidatePath('/user/home');
         return NextResponse.json({ message: "Item deleted successfully" });
     } catch (error: any) {
         console.error('Catch error:', error);

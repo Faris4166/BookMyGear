@@ -1,9 +1,7 @@
 import React from 'react'
-import { supabase } from '@/lib/supabase';
 import { auth } from '@clerk/nextjs/server';
 import ClientHistory from './ClientHistory';
-
-export const dynamic = 'force-dynamic'
+import { getCachedUserOrders } from '@/lib/cache';
 
 export default async function HistoryUser() {
   const { userId } = await auth();
@@ -17,38 +15,11 @@ export default async function HistoryUser() {
     )
   }
 
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      items (
-        name,
-        img,
-        description
-      )
-    `)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching orders:', error);
-    return <div>Error loading history</div>;
-  }
-
-  const formattedData = data.map((order: any) => ({
-    ...order,
-    name: order.items?.name,
-    img: order.items?.img,
-    description: order.items?.description,
-    datastart: order.start_date,
-    dataend: order.end_date,
-    role: order.status === 'approved' ? 'ได้รับอนุญาตแล้ว' :
-      order.status === 'rejected' ? 'ไม่ได้รับอนุญาต' :
-        order.status === 'pending' ? 'รอการอนุญาต' : order.status
-  }));
+  // ดึงข้อมูลผ่าน Cache Utility
+  const orders = await getCachedUserOrders(userId);
 
   // ไม่ต้องใช้ Suspense ที่นี่เพราะมี loading.tsx ใน folder แล้ว
   return (
-    <ClientHistory initialOrders={formattedData || []} />
+    <ClientHistory initialOrders={orders || []} />
   );
 }
